@@ -1,0 +1,76 @@
+version: '3.3'
+
+services:
+
+  web:
+    build: .
+    command: gunicorn core.wsgi:application --bind 0.0.0.0:8000 --access-logfile=gunicorn.log --error-logfile=gunicorn-error.log
+    #command: python /code/manage.py runserver 0.0.0.0:8000
+    volumes:
+      - .:/code
+    ports:
+      - 8000:8000
+    depends_on:
+      - db
+
+  db:
+    image: postgres:13
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    env_file:
+      - ./.env.db
+    ports:
+      - 6001:5432
+
+  nginx:
+    image: nginx:latest
+    ports:
+      - 80:80
+      - 443:443
+    restart: always
+    volumes:
+      - ./nginx/conf/:/etc/nginx/conf.d/:ro
+      - ./certbot/www:/var/www/certbot/:ro
+      - ./certbot/conf/:/etc/nginx/ssl/:ro
+      - ./staticfiles:/code/staticfiles
+      - ./backend-static:/code/backend-static
+      - ./mediafiles:/code/mediafiles
+    depends_on:
+      - web
+      # - client
+  
+  certbot:
+    image: certbot/certbot:latest
+    volumes:
+      - ./certbot/www/:/var/www/certbot/:rw
+      - ./certbot/conf/:/etc/letsencrypt/:rw
+  # nginx-proxy-letsencrypt:
+  #   image: jrcs/letsencrypt-nginx-proxy-companion
+  #   env_file:
+  #     - ./.env
+  #   volumes:
+  #     - /var/run/docker.sock:/var/run/docker.sock:ro
+  #     - certs:/etc/nginx/certs
+  #     - html:/usr/share/nginx/html
+  #     - vhost:/etc/nginx/vhost.d
+  #     - acme:/etc/acme.sh
+  #   depends_on:
+  #     - nginx
+  
+  # client:
+  #   stdin_open: true
+  #   environment:
+  #     - CHOKIDAR_USEPOLLING=true
+  #   build:
+  #     context: ../ECOM-Frontend/
+  #     dockerfile: Dockerfile
+  #   volumes:
+  #     - /app/node_modules
+  #     - ../ECOM-Frontend/:/app
+
+volumes:
+  postgres_data:
+  # certs:
+  # html:
+  # vhost:
+  # acme:

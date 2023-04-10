@@ -1,0 +1,8 @@
+venv/
+.env.db
+keyconfig.py
+*.log
+m1.txt
+m2.txt
+u1.txt
+*.pyc

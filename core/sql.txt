@@ -1,0 +1,80 @@
+--
+-- Create table for entity User
+--
+CREATE TABLE `user` (`id` bigint AUTO_INCREMENT PRIMARY KEY, `username` varchar(150) NOT NULL UNIQUE, `password` varchar(128) NOT NULL, `email` varchar(254) NOT NULL UNIQUE, `mobile` varchar(10) NOT NULL UNIQUE, `first_name` varchar(150) NOT NULL, `last_name` varchar(150) NOT NULL, `age` integer UNSIGNED NOT NULL CHECK (`age` >= 0), `sex` varchar(1) NULL, `address1` varchar(100) NOT NULL, `address2` varchar(100) NOT NULL, `city` varchar(50) NOT NULL, `country` varchar(50) NOT NULL, `pincode` varchar(6) NOT NULL, `date_joined` datetime(6) NOT NULL);
+--
+-- Create table for entity Customer
+--
+CREATE TABLE `customer` (`user_id` bigint PRIMARY KEY, `total_purchases` integer UNSIGNED NOT NULL CHECK (`total_purchases` >= 0));
+--
+-- Create table for entity Seller
+--
+CREATE TABLE `seller` (`user_id` bigint PRIMARY KEY, `total_sales` integer UNSIGNED NOT NULL CHECK (`total_sales` >= 0));
+--
+-- Create table for entity Review
+--
+CREATE TABLE `review` (`id` bigint AUTO_INCREMENT PRIMARY KEY, `rating` integer UNSIGNED NOT NULL CHECK (`rating` >= 0), `comment` longtext NOT NULL, `order_item_id` integer NOT NULL UNIQUE);
+--
+-- Create table for relation "Keep in Cart"
+--
+CREATE TABLE `cart_items` (`customer_id` bigint NOT NULL, `item_id` bigint NOT NULL, `quantity` integer NOT NULL CHECK (`quantity` >= 0));
+
+ALTER TABLE `customer` ADD CONSTRAINT `customer_user_id_c7b1139b_fk_user_id` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`);
+ALTER TABLE `seller` ADD CONSTRAINT `seller_user_id_3157961b_fk_user_id` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`);
+ALTER TABLE `review` ADD CONSTRAINT `review_order_item_id_35915625_fk_orderitem_id` FOREIGN KEY (`order_item_id`) REFERENCES `orderitem` (`id`);
+ALTER TABLE `cart` ADD CONSTRAINT `cart_customer_id_53c13515_fk_customer_user_id` FOREIGN KEY (`customer_id`) REFERENCES `customer` (`user_id`);
+ALTER TABLE `cart_items` ADD CONSTRAINT `cart_items_cart_id_item_id_b409593c_uniq` UNIQUE (`cart_id`, `item_id`);
+ALTER TABLE `cart_items` ADD CONSTRAINT `cart_items_cart_id_e8b5182e_fk_cart_id` FOREIGN KEY (`cart_id`) REFERENCES `cart` (`id`);
+ALTER TABLE `cart_items` ADD CONSTRAINT `cart_items_item_id_7514d44c_fk_item_id` FOREIGN KEY (`item_id`) REFERENCES `item` (`id`);
+
+
+
+--
+-- Create table for entity Category
+--
+CREATE TABLE `category` (`name` varchar(50) PRIMARY KEY);
+--
+-- Create table for entity Item
+--
+CREATE TABLE `item` (`id` integer AUTO_INCREMENT PRIMARY KEY, `name` varchar(50) NOT NULL, `price` integer UNSIGNED NOT NULL CHECK (`price` >= 0), `description` longtext NULL, `created_at` datetime(6) NOT NULL, `is_deleted` bool NOT NULL);
+--
+-- Create table for entity ItemImage
+--
+CREATE TABLE `itemimage` (`id` integer AUTO_INCREMENT PRIMARY KEY, `image` varchar(100) NOT NULL);
+--
+-- Create table for entity Order
+--
+CREATE TABLE `order` (`id` integer AUTO_INCREMENT PRIMARY KEY, `created_at` datetime(6) NOT NULL);
+--
+-- Create table for entity OrderItem
+--
+CREATE TABLE `orderitem` (`id` integer AUTO_INCREMENT PRIMARY KEY, `status` varchar(50) NOT NULL, `quantity` integer UNSIGNED NOT NULL CHECK (`quantity` >= 0), `item_id` integer NOT NULL, `order_id` integer NOT NULL);
+
+ALTER TABLE `orderitem` ADD CONSTRAINT `orderitem_item_id_108cca56_fk_item_id` FOREIGN KEY (`item_id`) REFERENCES `item` (`id`);
+ALTER TABLE `orderitem` ADD CONSTRAINT `orderitem_order_id_c1721cac_fk_order_id` FOREIGN KEY (`order_id`) REFERENCES `order` (`id`);
+
+
+
+--
+-- Add field customer to entity order
+--
+ALTER TABLE `order` ADD COLUMN `customer_id` bigint NOT NULL , ADD CONSTRAINT `order_customer_id_00edda29_fk_customer_user_id` FOREIGN KEY (`customer_id`) REFERENCES `customer`(`user_id`);
+--
+-- Add field item to itemimage
+--
+ALTER TABLE `itemimage` ADD COLUMN `item_id` integer NOT NULL , ADD CONSTRAINT `itemimage_item_id_08695147_fk_item_id` FOREIGN KEY (`item_id`) REFERENCES `item`(`id`);
+--
+-- Add field categories to item
+--
+CREATE TABLE `item_categories` (`id` bigint AUTO_INCREMENT PRIMARY KEY, `item_id` integer NOT NULL, `category_name` varchar(50) NOT NULL);
+--
+-- Add field seller to item
+--
+ALTER TABLE `item` ADD COLUMN `seller_id` bigint NOT NULL , ADD CONSTRAINT `item_seller_id_a38815bb_fk_seller_user_id` FOREIGN KEY (`seller_id`) REFERENCES `seller`(`user_id`);
+--
+-- Alter unique_together for item (1 constraint(s))
+--
+ALTER TABLE `item` ADD CONSTRAINT `item_name_seller_id_ff441eea_uniq` UNIQUE (`name`, `seller_id`);
+ALTER TABLE `item_categories` ADD CONSTRAINT `item_categories_item_id_category_name_ac247159_uniq` UNIQUE (`item_id`, `category_name`);
+ALTER TABLE `item_categories` ADD CONSTRAINT `item_categories_item_id_9d85a3b5_fk_item_id` FOREIGN KEY (`item_id`) REFERENCES `item` (`id`);
+ALTER TABLE `item_categories` ADD CONSTRAINT `item_categori_category_name_b684a388_fk_ca` FOREIGN KEY (`category_name`) REFERENCES `category` (`name`);
