@@ -84,7 +84,7 @@ class UserLoginResponseSerializer(serializers.ModelSerializer):
                           WHERE customer_id = %s GROUP BY customer_id ", 
                     [customer_id]
                 )
-        data["cart_count"] = int(ret[0].total_items)
+        data["cart_count"] = int(ret[0].total_items) if ret else 0
 
         c_data = FullCustomerSerializer(instance.customer).data
         s_data = FullSellerSerializer(instance.seller).data
