@@ -14,7 +14,7 @@ from rest_framework.permissions import IsAuthenticated
 from django.utils import timezone
 from django.contrib.auth import logout
 from rest_framework_simplejwt.views import TokenRefreshView
-
+from django.db import connection
 
 from django.contrib.auth import get_user_model
 
@@ -39,10 +39,27 @@ class Register(APIView):
         if password != confirm_password:
             raise CustomValidationError("Passwords do not match!")
 
-        if User.objects.filter(email=email).exists():
-            raise CustomValidationError("Email Already Registered!")
-        if User.objects.filter(mobile=mobile).exists():
-            raise CustomValidationError("Mobile Number Already Registered!")
+        with connection.cursor() as cursor:
+            # if User.objects.filter(email=email).exists():
+            #     raise CustomValidationError("Email Already Registered!")
+            cursor.execute(
+                "SELECT * FROM users_user WHERE email =%s", 
+                [email]
+            )
+            user = cursor.fetchone()
+            if user:
+                raise CustomValidationError("Email Already Registered!")
+            
+            # if User.objects.filter(mobile=mobile).exists():
+            #     raise CustomValidationError("Mobile Number Already Registered!")
+            cursor.execute(
+                "SELECT * FROM users_user WHERE mobile =%s", 
+                [mobile]
+            )
+            user = cursor.fetchone()
+            if user:
+                raise CustomValidationError("Mobile Number Already Registered!")
+        
         with transaction.atomic():
             try:
                 user = User.objects.create_user(
@@ -56,9 +73,20 @@ class Register(APIView):
                 )
                 user.set_password(password)
                 user.save()
-                Customer.objects.create(user=user)
-                Seller.objects.create(user=user)
-                
+                user_id = user.id
+
+                with connection.cursor() as cursor:
+                    # Customer.objects.create(user=user)
+                    cursor.execute(
+                        "INSERT INTO users_customer (user_id, total_purchases) VALUES (%s, 0)",
+                          [user_id] 
+                    )
+                    # Seller.objects.create(user=user)
+                    cursor.execute(
+                        "INSERT INTO users_seller (user_id, total_sales) VALUES (%s, 0)",
+                          [user_id] 
+                    )
+
             except Exception as e:
                 print("errror", str(e))
                 raise CustomValidationError("Unable to register. Try again later.")
@@ -88,26 +116,13 @@ def login_response(user):
 class Login(APIView):
     def post(self, request):
         data = request.data
-        # check_keys(data, ["user_type"])
-
-        # if not data["user_type"] in ["C", "S"]:
-        #     raise CustomValidationError("Invalid Data: user_type")
-
+        
         check_keys(data, ["email", "password"])
         email = data.get("email", None)
         password = data.get("password", None)
         auth_user = authenticate(username=email, password=password)
         if not auth_user:
             raise CustomValidationError("Invalid credentials")
-        # try:
-        #     if data["user_type"] == "C":
-        #         if not auth_user.customer:
-        #             raise CustomValidationError("Invalid credentials")
-        #     else:
-        #         if not auth_user.seller:
-        #             raise CustomValidationError("Invalid credentials")
-        # except:
-        #     raise CustomValidationError("Need to sign up first")
 
         login(request, auth_user)
         auth_user.last_login = timezone.now()

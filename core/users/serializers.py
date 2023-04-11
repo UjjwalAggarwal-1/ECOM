@@ -24,17 +24,11 @@ class ProfileDetailsSerializer(serializers.ModelSerializer):
         fields = (
             "id",
             "email",
-            # "username",
             "first_name",
             "last_name",
             "mobile",
             "age",
             "sex",
-            # "address1",
-            # "address2",
-            # "city",
-            # "country",
-            # "pincode",
         )
 
     def to_representation(self, instance):
@@ -44,30 +38,6 @@ class ProfileDetailsSerializer(serializers.ModelSerializer):
 
         return data
 
-
-class CustomerSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = Customer
-        fields = "__all__"
-        # exclude = ('password','user_permissions','groups', 'is_staff', 'is_superuser', 'is_active')
-        depth = 1
-
-    def create(self, validated_data):
-        user_data = validated_data.pop("user")
-        user = User.objects.create_user(**user_data)
-        
-
-    def update(self, instance, validated_data):
-        user_data = validated_data.pop("user")
-        user = instance.user
-        for key, value in user_data.items():
-            setattr(user, key, value)
-        user.save()
-        for key, value in validated_data.items():
-            setattr(instance, key, value)
-        instance.save()
-        return instance
 
 class TokenRefreshSerializer(TokenRefreshSerializer):
     pass
@@ -106,7 +76,7 @@ class UserLoginResponseSerializer(serializers.ModelSerializer):
         data["member_since"] = instance.date_joined.strftime("%B %d, %Y")
         data["cart_count"] = instance.customer.cart_set.aggregate(Sum('quantity')).get('quantity__sum', 0)
 
-        c_data = CustomerSerializer(instance.customer).data
+        c_data = FullCustomerSerializer(instance.customer).data
         s_data = FullSellerSerializer(instance.seller).data
 
         return {**data, **c_data, **s_data}

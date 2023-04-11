@@ -23,17 +23,7 @@ class ItemListSerializer(serializers.ModelSerializer):
     
     def get_rating(self, obj):
         return 4.5
-    
 
-
-class ItemDetailSerializer(serializers.ModelSerializer):
-    seller = CustomerSerializer(read_only=True)
-    categories = CategorySerializer(many=True, read_only=True)
-
-    class Meta:
-        model = Item
-        fields = "__all__"
-        
 
 class CartSerializer(serializers.ModelSerializer):
     class Meta:

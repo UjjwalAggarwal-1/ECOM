@@ -51,7 +51,6 @@ class User(AbstractUser):
 
 class Seller(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True)
-    # email = models.EmailField(_("email address"), unique=True)
     total_sales = models.PositiveIntegerField(default=0)
     store_address1 = models.CharField(max_length=100, null=True, blank=True)
     store_address2 = models.CharField(max_length=100, null=True, blank=True)
@@ -66,7 +65,6 @@ class Seller(models.Model):
 
 class Customer(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True)
-    # email = models.EmailField(_("email address"), unique=True)
     total_purchases = models.PositiveIntegerField(default=0)
     delivery_address1 = models.CharField(max_length=100, null=True, blank=True)
     delivery_address2 = models.CharField(max_length=100, null=True, blank=True)
