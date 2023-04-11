@@ -14,6 +14,7 @@ urlpatterns = [
     path('', include(router.urls)),
     path('item-list/', ItemListAPI.as_view()),
     path('category-list/', CategoryListAPI.as_view()),
+    path('item/', ItemRetreiveAPI.as_view()),
     # path('year/list/', YearListAPIView.as_view()),
     # path('condition/list/', ConditionListAPIView.as_view()),
     # path('price_filter/list/', price_filter_list),
