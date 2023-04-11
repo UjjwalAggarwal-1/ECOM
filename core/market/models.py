@@ -2,8 +2,8 @@ from django.db import models
 
 
 class Category(models.Model):
-    id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=50, unique=True)
+    image = models.ImageField(upload_to='category_images', null=True, blank=True)
 
     def __str__(self):
         return self.name
@@ -21,7 +21,7 @@ class Item(models.Model):
     seller = models.ForeignKey('users.Seller',on_delete=models.PROTECT)
     created_at = models.DateTimeField(auto_now_add=True)
     is_deleted = models.BooleanField(default=False)
-    categories = models.ManyToManyField(Category, related_name='items')
+    category = models.ForeignKey(Category, related_name='items', on_delete=models.SET_NULL, null=True, blank=True)
 
     class Meta:
         unique_together = ('name', 'seller')
@@ -35,7 +35,6 @@ class ItemImage(models.Model):
     def image_directory_path(self, filename):
         return 'item_images/{0}/{1}'.format(self.item.id, filename)
     
-    id = models.AutoField(primary_key=True)
     item = models.ForeignKey(Item, on_delete=models.CASCADE, related_name='images')
     image = models.ImageField(upload_to=image_directory_path)
 

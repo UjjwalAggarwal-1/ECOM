@@ -37,14 +37,7 @@ class User(AbstractUser):
     last_name = models.CharField(_("last name"), max_length=150, blank=True)
     age = models.PositiveIntegerField(default=0)
     sex = models.CharField(max_length=1, null=True, blank=True, choices=(("M","Male"), ("F", "Female"), ("O", "Other")))
-
-    address1 = models.CharField(max_length=100)
-    address2 = models.CharField(max_length=100)
-    city = models.CharField(max_length=50)
-    country = models.CharField(max_length=50)
-    pincode = models.CharField(max_length=6)
     date_joined = models.DateTimeField(_("date joined"), default=timezone.now)
-    last_login = models.DateTimeField(_("last login"), blank=True, null=True)
 
     def __str__(self):
         return str(self.id) + self.username
@@ -52,16 +45,34 @@ class User(AbstractUser):
 
 class Seller(User):
     total_sales = models.PositiveIntegerField(default=0)
+    store_address1 = models.CharField(max_length=100, null=True, blank=True)
+    store_address2 = models.CharField(max_length=100, null=True, blank=True)
+    store_city = models.CharField(max_length=50, null=True, blank=True)
+    store_country = models.CharField(max_length=50, null=True, blank=True)
+    store_pincode = models.CharField(max_length=6, null=True, blank=True)
+
+    class Meta:
+        verbose_name = "Seller"
+        verbose_name_plural = "Sellers"
 
 
 class Customer(User):
     total_purchases = models.PositiveIntegerField(default=0)
+    delivery_address1 = models.CharField(max_length=100, null=True, blank=True)
+    delivery_address2 = models.CharField(max_length=100, null=True, blank=True)
+    delivery_city = models.CharField(max_length=50, null=True, blank=True)
+    delivery_country = models.CharField(max_length=50, null=True, blank=True)
+    delivery_pincode = models.CharField(max_length=6, null=True, blank=True)
+
+    class Meta:
+        verbose_name = "Customer"
+        verbose_name_plural = "Customers"
 
 
 class Cart(models.Model):
-    id = models.AutoField(primary_key=True)
-    customer = models.OneToOneField('Customer', on_delete=models.CASCADE)
-    items = models.ManyToManyField('market.Item')
+    customer = models.ForeignKey('Customer', on_delete=models.CASCADE)
+    item = models.ForeignKey('market.Item', on_delete=models.CASCADE)
+    quantity = models.PositiveIntegerField()
 
     def __str__(self):
         return str(self.id) + self.customer.user.username
