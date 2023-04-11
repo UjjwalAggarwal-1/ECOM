@@ -11,4 +11,7 @@ urlpatterns = [
     path("refresh-token-payload/", TokenRefreshView.as_view(), name="token_refresh_payload"),
     path('view-cart/', ViewCartAPI.as_view(), name='view-cart'),
     path('update-cart/', UpdateCartAPI.as_view(), name='update-cart'),
+    path('update-user/', UpdateUserAPI.as_view(), name='update-user'),
+    path('update-customer/', UpdateCustomerAPI.as_view(), name='update-customer'),
+    path('update-seller/', UpdateSellerAPI.as_view(), name='update-seller'),
 ]

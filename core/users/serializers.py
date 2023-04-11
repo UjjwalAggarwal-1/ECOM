@@ -44,6 +44,15 @@ class TokenRefreshSerializer(TokenRefreshSerializer):
     pass
 
 
+class FullUserSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = User
+        exclude = ('mobile',
+                   'email',
+                   'password','user_permissions','groups', 'is_staff', 'is_superuser', 'is_active', 'last_login', 'date_joined')
+
+
 class FullCustomerSerializer(serializers.ModelSerializer):
 
     class Meta:
@@ -59,25 +68,24 @@ class FullSellerSerializer(serializers.ModelSerializer):
 
 
 class UserLoginResponseSerializer(serializers.ModelSerializer):
-
+   
     class Meta:
         model = User
-        fields = (
+        fields = [
             "id",
             "email",
             "first_name",
             "last_name",
             "mobile",
             "age",
-            "sex",
-        )
+            "sex", 
+        ]
     
     def to_representation(self, instance):
         data = super().to_representation(instance)
         data["member_since"] = instance.date_joined.strftime("%B %d, %Y")
 
         customer_id = instance.id
-        print("customer_id", customer_id)
         with connection.cursor() as cursor:
                 ret = Cart.objects.raw(
                     "SELECT 1 as id, customer_id, SUM(quantity) as total_items FROM users_cart\

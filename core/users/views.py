@@ -151,6 +151,8 @@ class ProfileDetailAPI(generics.RetrieveAPIView):
                 "SELECT * FROM users_user WHERE id = %s", 
                 [user_id]
             )
+        if not user:
+            return None
         user = user[0]
         return user
 
@@ -226,3 +228,28 @@ class UpdateCartAPI(generics.UpdateAPIView):
                 "message": "Cart updated",
             }
         )
+    
+
+class UpdateUserAPI(generics.UpdateAPIView):
+    model = User
+    permission_classes = (IsAuthenticated,)
+    serializer_class = FullUserSerializer
+
+    def get_object(self):
+        return self.request.user
+
+class UpdateCustomerAPI(generics.UpdateAPIView):
+    model = Customer
+    permission_classes = (IsAuthenticated,)
+    serializer_class = FullCustomerSerializer
+
+    def get_object(self):
+        return self.request.user.customer
+
+class UpdateSellerAPI(generics.UpdateAPIView):
+    model = Seller
+    permission_classes = (IsAuthenticated,)
+    serializer_class = FullSellerSerializer
+
+    def get_object(self):
+        return self.request.user.seller

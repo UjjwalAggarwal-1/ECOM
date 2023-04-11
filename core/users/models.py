@@ -37,6 +37,8 @@ class User(AbstractUser):
     age = models.PositiveIntegerField(default=0)
     sex = models.CharField(max_length=1, null=True, blank=True, choices=(("M","Male"), ("F", "Female"), ("O", "Other")))
     date_joined = models.DateTimeField(_("date joined"), default=timezone.now)
+    credit_card  = models.CharField(max_length=16, null=True, blank=True)
+    bank_name = models.CharField(max_length=50, null=True, blank=True)
 
     def __str__(self):
         return str(self.id) + self.username
