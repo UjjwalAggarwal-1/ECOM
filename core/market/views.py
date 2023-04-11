@@ -57,7 +57,14 @@ class CategoryListAPI(generics.ListAPIView):
         )
 
 
-class ItemRetreiveAPI(generics.RetrieveAPIView):
+class ItemRetreiveAPI(generics.APIView):
     serializer_class = ItemSerializer
     permission_classes = []
     queryset = Item.objects.all()
+
+    def get_object(self):
+        pk = self.request.query_params.get('id', None)
+        try:
+            return Item.objects.get(pk=pk)
+        except Item.DoesNotExist:
+            raise CustomValidationError("Item does not exist")
