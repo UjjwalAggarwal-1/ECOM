@@ -41,8 +41,22 @@ class ItemListAPI(generics.ListAPIView):
     def get_queryset(self):
         queryset = Item.objects.raw('SELECT * FROM market_item')
         category = self.request.query_params.get('category', None)
+        search = self.request.query_params.get('search', None)
+        # if category and search:
+        #     return None
         if category is not None:
-            queryset = Item.objects.raw('SELECT * FROM market_item WHERE category_id = %s', [category])
+            queryset = Item.objects.raw('SELECT *  FROM `market_item` \
+                                        INNER JOIN `market_category` ON (`market_item`.`categories_id` = `market_category`.`id`)\
+                                        WHERE `market_category`.`name` = %s', 
+                                        [category]
+                                        )
+        if search is not None:
+            queryset = Item.objects.raw('SELECT * FROM market_item WHERE name LIKE %s \
+                                        UNION SELECT * FROM market_item \
+                                        INNER JOIN `market_category` ON (`market_item`.`categories_id` = `market_category`.`id`)\
+                                        WHERE `market_category`.`name` LIKE %s', 
+                                        ['%'+search+'%', '%'+search+'%'] 
+                                        )
         return queryset
 
 
