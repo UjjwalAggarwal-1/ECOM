@@ -49,8 +49,8 @@ class CustomerSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Customer
-        # fields = "__all__"
-        exclude = ('password','user_permissions','groups', 'is_staff', 'is_superuser', 'is_active')
+        fields = "__all__"
+        # exclude = ('password','user_permissions','groups', 'is_staff', 'is_superuser', 'is_active')
         depth = 1
 
     def create(self, validated_data):

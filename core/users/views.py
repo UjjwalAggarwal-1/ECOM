@@ -3,6 +3,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from core.exceptions import CustomValidationError
 from .models import *
+from market.serializers import *
 from django.db import transaction
 from django.contrib.auth import authenticate, login
 from django.conf import settings
@@ -131,3 +132,11 @@ class ProfileDetailAPI(generics.RetrieveAPIView):
 
     def get_object(self):
         return self.request.user
+
+
+class ViewCartAPI(generics.ListAPIView):
+    permission_classes = (IsAuthenticated,)
+    serializer_class = CartSerializer
+
+    def get_queryset(self):
+        return self.request.user.customer.cart_set.all()
