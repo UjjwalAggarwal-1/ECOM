@@ -192,31 +192,31 @@ AUTH_USER_MODEL = "users.User"
 #     },
 # }
 
-LOGGING = {
-    'version': 1,
-    "root": {"level": "INFO", "handlers": ["console",]},
-    'filters': {
-        'require_debug_true': {
-            '()': 'django.utils.log.RequireDebugTrue',
-        }
-    },
-    'handlers': {
-        # "file": {
-        #     "level": "INFO",
-        #     "class": "logging.FileHandler",
-        #     "filename": "cognix.log",
-        #     "formatter": "app",
-        # },
-        'console': {
-            'level': 'DEBUG',
-            'filters': ['require_debug_true'],
-            'class': 'logging.StreamHandler',
-        }
-    },
-    'loggers': {
-        'django.db.backends': {
-            'level': 'DEBUG',
-            'handlers': ['console',],
-        }
-    }
-}
+# LOGGING = {
+#     'version': 1,
+#     "root": {"level": "INFO", "handlers": ["console",]},
+#     'filters': {
+#         'require_debug_true': {
+#             '()': 'django.utils.log.RequireDebugTrue',
+#         }
+#     },
+#     'handlers': {
+#         # "file": {
+#         #     "level": "INFO",
+#         #     "class": "logging.FileHandler",
+#         #     "filename": "cognix.log",
+#         #     "formatter": "app",
+#         # },
+#         'console': {
+#             'level': 'DEBUG',
+#             'filters': ['require_debug_true'],
+#             'class': 'logging.StreamHandler',
+#         }
+#     },
+#     'loggers': {
+#         'django.db.backends': {
+#             'level': 'DEBUG',
+#             'handlers': ['console',],
+#         }
+#     }
+# }

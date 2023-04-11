@@ -31,7 +31,6 @@ class User(AbstractUser):
         },
     )
     password = models.CharField(_("password"), max_length=128)
-    email = models.EmailField(_("email address"), unique=True)
     mobile = models.CharField(max_length=10, unique=True)
     first_name = models.CharField(_("first name"), max_length=150, blank=True)
     last_name = models.CharField(_("last name"), max_length=150, blank=True)
@@ -43,7 +42,9 @@ class User(AbstractUser):
         return str(self.id) + self.username
 
 
-class Seller(User):
+class Seller(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True)
+    # email = models.EmailField(_("email address"), unique=True)
     total_sales = models.PositiveIntegerField(default=0)
     store_address1 = models.CharField(max_length=100, null=True, blank=True)
     store_address2 = models.CharField(max_length=100, null=True, blank=True)
@@ -56,7 +57,9 @@ class Seller(User):
         verbose_name_plural = "Sellers"
 
 
-class Customer(User):
+class Customer(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True)
+    # email = models.EmailField(_("email address"), unique=True)
     total_purchases = models.PositiveIntegerField(default=0)
     delivery_address1 = models.CharField(max_length=100, null=True, blank=True)
     delivery_address2 = models.CharField(max_length=100, null=True, blank=True)
