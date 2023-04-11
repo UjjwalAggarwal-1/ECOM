@@ -44,7 +44,7 @@ class ItemListAPI(generics.ListAPIView):
         if trending is not None:
             queryset = Item.objects.raw(
                 'SELECT * FROM market_item ORDER BY total_sale DESC LIMIT %s',
-                [trending]
+                [int(trending)]
                 )
         return queryset
 
