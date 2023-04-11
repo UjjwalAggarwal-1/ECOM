@@ -50,7 +50,7 @@ class ItemSerializer(serializers.ModelSerializer):
         fields = ("id", "name", "price", "seller_name", 'rating', 'description', 'total_sale', 'images')
 
     def get_rating(self, obj):
-        return Review.objects.filter(item=obj).aggregate(Avg('rating'))['rating__avg'] or 0
+        return Review.objects.filter(order_item__item=obj).aggregate(Avg('rating'))['rating__avg'] or 0
 
     def get_images(self, obj):
         return [image.image.url for image in obj.images.all() if image.image]
