@@ -24,7 +24,7 @@ class ItemListSerializer(serializers.ModelSerializer):
         return obj.images.first().image.url if obj.images.first() else None
     
     def get_rating(self, obj):
-        return Review.objects.filter(item=obj).aggregate(Avg('rating'))['rating__avg'] or 0
+        return Review.objects.filter(order_item__item=obj).aggregate(Avg('rating'))['rating__avg'] or 0
 
 
 
