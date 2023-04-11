@@ -146,7 +146,13 @@ class ProfileDetailAPI(generics.RetrieveAPIView):
     serializer_class = ProfileDetailsSerializer
 
     def get_object(self):
-        return self.request.user
+        user_id = self.request.user.id
+        user = User.objects.raw(
+                "SELECT * FROM users_user WHERE id = %s", 
+                [user_id]
+            )
+        user = user[0]
+        return user
 
 
 class ViewCartAPI(generics.ListAPIView):
@@ -154,40 +160,67 @@ class ViewCartAPI(generics.ListAPIView):
     serializer_class = CartSerializer
 
     def get_queryset(self):
-        return self.request.user.customer.cart_set.all()
+        user_id = self.request.user.id
+        cart_items = Cart.objects.raw(
+            "SELECT * FROM users_cart WHERE customer_id = %s", 
+            [user_id]
+        )
+        return cart_items
     
 
 class UpdateCartAPI(generics.UpdateAPIView):
+
     permission_classes = (IsAuthenticated,)
     serializer_class = CartSerializer
 
     def get_object(self):
-        item_id = self.request.data.get("item_id", None)
+        item_id = self.request.data.get("item_id")
         if not item_id:
             raise CustomValidationError("Invalid request parameters")
-        return self.request.user.customer.cart_set.filter(item_id=item_id).first()
+        
+        user_id = self.request.user.id
+        
+        cart_item = Cart.objects.raw(
+            "SELECT * FROM users_cart WHERE customer_id = %s AND item_id = %s", 
+            [user_id, item_id]
+        )
+        if not cart_item:
+            return None
+        cart_item = cart_item[0]
+        return cart_item
     
     def post(self, request):
         data = request.data
         check_keys(data, ["item_id", "quantity"])
-        cart = self.get_object()
-        if not cart:
-            cart = Cart.objects.create(customer=request.user.customer, item_id=data["item_id"], quantity=data["quantity"])
+        cart_item = self.get_object()
+        if not cart_item:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    "INSERT INTO users_cart (customer_id, item_id, quantity) VALUES (%s, %s, %s)", 
+                    [request.user.id, int(data["item_id"]), int(data["quantity"])],
+                )
             return Response(
                 {
                     "message": "Item added to cart",
                 }
             )
         if int(data["quantity"]) == 0:
-            cart.delete()
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    "DELETE FROM users_cart WHERE customer_id = %s AND item_id = %s", 
+                    [request.user.id, data["item_id"]]
+                )
             return Response(
                 {
                     "message": "Item removed from cart",
                 }
             )
         
-        cart.quantity = data["quantity"]
-        cart.save()
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "UPDATE users_cart SET quantity = %s WHERE customer_id = %s AND item_id = %s", 
+                [int(data['quantity']), request.user.id, int(data["item_id"])]
+            )
         return Response(
             {
                 "message": "Cart updated",
