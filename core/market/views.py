@@ -62,9 +62,11 @@ class ItemRetreiveAPI(APIView):
     permission_classes = []
     queryset = Item.objects.all()
 
-    def get_object(self):
+    def get(self):
         pk = self.request.query_params.get('id', None)
         try:
-            return Item.objects.get(pk=pk)
+            item = Item.objects.get(pk=pk)
         except Item.DoesNotExist:
             raise CustomValidationError("Item does not exist")
+        
+        return Response(ItemSerializer(item).data)
