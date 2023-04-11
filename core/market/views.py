@@ -57,7 +57,7 @@ class CategoryListAPI(generics.ListAPIView):
         )
 
 
-class ItemRetreiveAPI(generics.APIView):
+class ItemRetreiveAPI(APIView):
     serializer_class = ItemSerializer
     permission_classes = []
     queryset = Item.objects.all()
