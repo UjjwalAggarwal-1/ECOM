@@ -62,7 +62,7 @@ class ItemRetreiveAPI(APIView):
     permission_classes = []
     queryset = Item.objects.all()
 
-    def get(self):
+    def get(self, request):
         pk = self.request.query_params.get('id', None)
         try:
             item = Item.objects.get(pk=pk)
