@@ -22,6 +22,7 @@ class ItemListAPI(generics.ListAPIView):
             )
         category = self.request.query_params.get('category', None)
         search = self.request.query_params.get('search', None)
+        trending = self.request.query_params.get('trending', None)
         # if category and search:
         #     return None
         if category is not None:
@@ -38,6 +39,12 @@ class ItemListAPI(generics.ListAPIView):
                 INNER JOIN `market_category` ON (`market_item`.`categories_id` = `market_category`.`id`)\
                 WHERE `market_category`.`name` LIKE %s', 
                 ['%'+search+'%', '%'+search+'%'] 
+                )
+            
+        if trending is not None:
+            queryset = Item.objects.raw(
+                'SELECT * FROM market_item ORDER BY total_sale DESC LIMIT %s',
+                [trending]
                 )
         return queryset
 

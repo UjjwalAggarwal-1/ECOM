@@ -22,7 +22,7 @@ class Item(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     is_deleted = models.BooleanField(default=False)
     category = models.ForeignKey(Category, related_name='items', on_delete=models.SET_NULL, null=True, blank=True)
-    total_sales = models.PositiveIntegerField(default=0)
+    total_sale = models.PositiveIntegerField(default=0)
 
     class Meta:
         unique_together = ('name', 'seller')
