@@ -76,7 +76,7 @@ def login_response(user):
     response = Response()
     response.data = {
             "message": "Login Successful",
-            **UserSerializer(user).data,
+            **UserLoginResponseSerializer(user).data,
             "access": str(refresh.access_token),
             # "refresh": str(refresh),
             # **settings.SIMPLE_JWT,

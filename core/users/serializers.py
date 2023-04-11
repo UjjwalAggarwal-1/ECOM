@@ -1,8 +1,8 @@
 from .models import *
 from rest_framework import serializers
-from django.contrib.auth import authenticate
 from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 from django.contrib.auth import get_user_model
+from django.db.models import Sum
 
 User = get_user_model()
 
@@ -71,3 +71,42 @@ class CustomerSerializer(serializers.ModelSerializer):
 
 class TokenRefreshSerializer(TokenRefreshSerializer):
     pass
+
+
+class FullCustomerSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Customer
+        fields = "__all__"
+
+
+class FullSellerSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Seller
+        fields = "__all__"
+
+
+class UserLoginResponseSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = User
+        fields = (
+            "id",
+            "email",
+            "first_name",
+            "last_name",
+            "mobile",
+            "age",
+            "sex",
+        )
+    
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data["member_since"] = instance.date_joined.strftime("%B %d, %Y")
+        data["cart_count"] = instance.customer.cart_set.aggregate(Sum('quantity')).get('quantity__sum', 0)
+
+        c_data = CustomerSerializer(instance.customer).data
+        s_data = FullSellerSerializer(instance.seller).data
+
+        return {**data, **c_data, **s_data}
