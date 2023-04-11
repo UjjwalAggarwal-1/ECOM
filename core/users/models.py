@@ -42,9 +42,10 @@ class User(AbstractUser):
         return str(self.id) + self.username
     
     def save(self, *args, **kwargs):
-        self.email = self.email.lower()
-        self.username = self.email.lower()
-        self.sex = self.sex.upper()
+        if not self.id:
+            self.email = self.email.lower()
+            self.username = self.email.lower()
+        if self.sex: self.sex = self.sex.upper()
         super().save(*args, **kwargs)
         
 

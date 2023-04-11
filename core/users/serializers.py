@@ -11,7 +11,7 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = (
-            "id",
+            # "id",
             "email",
         )
         # exclude = ('password','user_permissions','groups', 'is_staff', 'is_superuser', 'is_active', 'last_login', 'date_joined', 'is_deleted')
@@ -24,23 +24,23 @@ class ProfileDetailsSerializer(serializers.ModelSerializer):
         fields = (
             "id",
             "email",
-            "username",
+            # "username",
             "first_name",
             "last_name",
             "mobile",
             "age",
             "sex",
-            "address1",
-            "address2",
-            "city",
-            "country",
-            "pincode",
+            # "address1",
+            # "address2",
+            # "city",
+            # "country",
+            # "pincode",
         )
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
         data["member_since"] = instance.date_joined.strftime("%B %d, %Y")
-        data["last_login"] = instance.last_login.strftime("%H:%M, %B %d, %Y")
+        # data["last_login"] = instance.last_login.strftime("%H:%M, %B %d, %Y")
 
         return data
 

@@ -128,7 +128,6 @@ class Logout(APIView):
 class ProfileDetailAPI(generics.RetrieveAPIView):
     permission_classes = (IsAuthenticated,)
     serializer_class = ProfileDetailsSerializer
-    queryset = User.objects.all()
 
     def get_object(self):
         return self.request.user
