@@ -28,7 +28,7 @@ class ItemListAPI(generics.ListAPIView):
         if category is not None:
             queryset = Item.objects.raw(
                 'SELECT *  FROM `market_item` \
-                INNER JOIN `market_category` ON (`market_item`.`categories_id` = `market_category`.`id`)\
+                INNER JOIN `market_category` ON (`market_item`.`category_id` = `market_category`.`id`)\
                 WHERE `market_category`.`name` = %s', 
                 [category]
                 )
@@ -36,7 +36,7 @@ class ItemListAPI(generics.ListAPIView):
             queryset = Item.objects.raw(
                 'SELECT * FROM market_item WHERE name LIKE %s \
                 UNION SELECT * FROM market_item \
-                INNER JOIN `market_category` ON (`market_item`.`categories_id` = `market_category`.`id`)\
+                INNER JOIN `market_category` ON (`market_item`.`category_id` = `market_category`.`id`)\
                 WHERE `market_category`.`name` LIKE %s', 
                 ['%'+search+'%', '%'+search+'%'] 
                 )
