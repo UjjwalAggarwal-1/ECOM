@@ -55,3 +55,9 @@ class CategoryListAPI(generics.ListAPIView):
     queryset = Category.objects.raw(
         'SELECT * FROM market_category'
         )
+
+
+class ItemRetreiveAPI(generics.RetrieveAPIView):
+    serializer_class = ItemSerializer
+    permission_classes = []
+    queryset = Item.objects.all()

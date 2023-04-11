@@ -2,6 +2,8 @@ from rest_framework import serializers
 from market.models import *
 from users.models import *
 from users.serializers import *
+from django.db import connection
+from django.db.models import Avg
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
@@ -22,7 +24,8 @@ class ItemListSerializer(serializers.ModelSerializer):
         return obj.images.first().image.url if obj.images.first() else None
     
     def get_rating(self, obj):
-        return 4.5
+        return Review.objects.filter(item=obj).aggregate(Avg('rating'))['rating__avg'] or 0
+
 
 
 class CartSerializer(serializers.ModelSerializer):
@@ -36,3 +39,18 @@ class CartSerializer(serializers.ModelSerializer):
         data.pop('item')
         return {**item_data,**data}
     
+
+class ItemSerializer(serializers.ModelSerializer):
+    seller_name = serializers.CharField(source='seller.user.first_name', read_only=True)
+    rating = serializers.SerializerMethodField()
+    images = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Item
+        fields = ("id", "name", "price", "seller_name", 'rating', 'description', 'total_sale', 'images')
+
+    def get_rating(self, obj):
+        return Review.objects.filter(item=obj).aggregate(Avg('rating'))['rating__avg'] or 0
+
+    def get_images(self, obj):
+        return [image.image.url for image in obj.images.all() if image.image]
