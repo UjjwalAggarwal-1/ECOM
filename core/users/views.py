@@ -140,3 +140,41 @@ class ViewCartAPI(generics.ListAPIView):
 
     def get_queryset(self):
         return self.request.user.customer.cart_set.all()
+    
+
+class UpdateCartAPI(generics.UpdateAPIView):
+    permission_classes = (IsAuthenticated,)
+    serializer_class = CartSerializer
+
+    def get_object(self):
+        item_id = self.request.data.get("item_id", None)
+        if not item_id:
+            raise CustomValidationError("Invalid request parameters")
+        return self.request.user.customer.cart_set.filter(item_id=item_id).first()
+    
+    def post(self, request):
+        data = request.data
+        check_keys(data, ["item_id", "quantity"])
+        cart = self.get_object()
+        if not cart:
+            cart = Cart.objects.create(customer=request.user.customer, item_id=data["item_id"], quantity=data["quantity"])
+            return Response(
+                {
+                    "message": "Item added to cart",
+                }
+            )
+        if int(data["quantity"]) == 0:
+            cart.delete()
+            return Response(
+                {
+                    "message": "Item removed from cart",
+                }
+            )
+        
+        cart.quantity = data["quantity"]
+        cart.save()
+        return Response(
+            {
+                "message": "Cart updated",
+            }
+        )
