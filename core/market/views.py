@@ -66,8 +66,10 @@ class ItemRetreiveAPI(APIView):
 
     def get(self, request):
         pk = self.request.query_params.get('id', None)
+        if not pk:
+            raise CustomValidationError("Invalid request Parameters")
         try:
-            item = Item.objects.get(pk=pk)
+            item = Item.objects.filter(pk=pk).first()
         except Item.DoesNotExist:
             raise CustomValidationError("Item does not exist")
         
