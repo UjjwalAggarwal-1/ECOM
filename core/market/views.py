@@ -12,31 +12,31 @@ from .serializers import *
 from core.permissions import *
 
 
-class CategoryViewSet(viewsets.ModelViewSet):
-    queryset = Category.objects.all()
-    serializer_class = CategorySerializer
-    permission_classes = [IsAuthenticated]
+# class CategoryViewSet(viewsets.ModelViewSet):
+#     queryset = Category.objects.all()
+#     serializer_class = CategorySerializer
+#     permission_classes = [IsAuthenticated]
 
 
-class ItemViewSet(viewsets.ModelViewSet):
-    queryset = Item.objects.all()
-    serializer_class = ItemDetailSerializer
-    permission_classes = [IsAuthenticated, IsOwnerOrReadOnly]
+# class ItemViewSet(viewsets.ModelViewSet):
+#     queryset = Item.objects.all()
+#     serializer_class = ItemDetailSerializer
+#     permission_classes = [IsAuthenticated, IsOwnerOrReadOnly]
 
-    def get_queryset(self):
-        queryset = Item.objects.all()
-        category = self.request.query_params.get('category', None)
-        if category is not None:
-            queryset = queryset.filter(category__name=category.upper())
-        return queryset
+#     def get_queryset(self):
+#         queryset = Item.objects.all()
+#         category = self.request.query_params.get('category', None)
+#         if category is not None:
+#             queryset = queryset.filter(category__name=category.upper())
+#         return queryset
     
-    def perform_create(self, serializer):
-        serializer.save(seller=self.request.user.customer)
+#     def perform_create(self, serializer):
+#         serializer.save(seller=self.request.user.customer)
 
 
-class ItemList(generics.ListAPIView):
+class ItemListAPI(generics.ListAPIView):
     serializer_class = ItemListSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = []
 
     def get_queryset(self):
         queryset = Item.objects.all()
@@ -46,3 +46,7 @@ class ItemList(generics.ListAPIView):
         return queryset
 
 
+class CategoryListAPI(generics.ListAPIView):
+    serializer_class = CategorySerializer
+    permission_classes = []
+    queryset = Category.objects.all()

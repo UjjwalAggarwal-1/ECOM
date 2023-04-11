@@ -4,16 +4,16 @@ from rest_framework.routers import DefaultRouter
 
 
 router = DefaultRouter()
-router.register(r'items', ItemViewSet, basename='item')
+# router.register(r'items', ItemViewSet, basename='item')
 # router.register(r'moderator-items', ModeratorItemViewSet, basename = "moderator-item")
 # router.register(r'reports', ReportViewSet, basename = 'report')
-router.register(r'category', CategoryViewSet, basename = 'category')
+# router.register(r'category', CategoryViewSet, basename = 'category')
 # urlpatterns = router.urls
 
 urlpatterns = [
     path('', include(router.urls)),
-    path('item-list/', ItemList.as_view()),
-    # path('category/list/', CategoryListAPIView.as_view()),
+    path('item-list/', ItemListAPI.as_view()),
+    path('category-list/', CategoryListAPI.as_view()),
     # path('year/list/', YearListAPIView.as_view()),
     # path('condition/list/', ConditionListAPIView.as_view()),
     # path('price_filter/list/', price_filter_list),
