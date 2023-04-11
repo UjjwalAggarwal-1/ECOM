@@ -39,14 +39,14 @@ class ItemListAPI(generics.ListAPIView):
     permission_classes = []
 
     def get_queryset(self):
-        queryset = Item.objects.all()
+        queryset = Item.objects.raw('SELECT * FROM market_item')
         category = self.request.query_params.get('category', None)
         if category is not None:
-            queryset = queryset.filter(category__name=category.upper())
+            queryset = Item.objects.raw('SELECT * FROM market_item WHERE category_id = %s', [category])
         return queryset
 
 
 class CategoryListAPI(generics.ListAPIView):
     serializer_class = CategorySerializer
     permission_classes = []
-    queryset = Category.objects.all()
+    queryset = Category.objects.raw('SELECT * FROM market_category')

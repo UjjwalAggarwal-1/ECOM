@@ -24,24 +24,24 @@ class Register(APIView):
 
     def post(self, request):
         try:
-            email = request.data["email"]
+            email = request.data["email"].lower()
             password = request.data["password"]
             confirm_password = request.data["confirm_password"]
-            # type = request.data["user_type"]
             first_name = request.data.get("first_name", "")
             last_name = request.data.get("last_name", "")
+            mobile = request.data["mobile"]
+            age = request.data.get("age", 0)
+            sex = request.data.get("sex", "")
         except KeyError:
             raise CustomValidationError("Invalid request Parameters")
-
-        # if not type in ["C", "S"]:
-        #     raise CustomValidationError("Invalid Data: user_type")
 
         if password != confirm_password:
             raise CustomValidationError("Passwords do not match!")
 
         if User.objects.filter(email=email).exists():
             raise CustomValidationError("Email Already Registered!")
-
+        if User.objects.filter(mobile=mobile).exists():
+            raise CustomValidationError("Mobile Number Already Registered!")
         with transaction.atomic():
             try:
                 user = User.objects.create_user(
@@ -49,17 +49,17 @@ class Register(APIView):
                     email=email,
                     first_name=first_name,
                     last_name=last_name,
+                    mobile=mobile,
+                    age=age,
+                    sex = sex
                 )
                 user.set_password(password)
                 user.save()
-                # if type == "C":
                 Customer.objects.create(user=user)
-                # else:
                 Seller.objects.create(user=user)
                 
-
             except Exception as e:
-                # print("errror", str(e))
+                print("errror", str(e))
                 raise CustomValidationError("Unable to register. Try again later.")
         return Response(
             {

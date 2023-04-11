@@ -31,7 +31,7 @@ class User(AbstractUser):
         },
     )
     password = models.CharField(_("password"), max_length=128)
-    mobile = models.CharField(max_length=10, unique=True)
+    mobile = models.CharField(max_length=20, unique=True)
     first_name = models.CharField(_("first name"), max_length=150, blank=True)
     last_name = models.CharField(_("last name"), max_length=150, blank=True)
     age = models.PositiveIntegerField(default=0)
@@ -40,7 +40,13 @@ class User(AbstractUser):
 
     def __str__(self):
         return str(self.id) + self.username
-
+    
+    def save(self, *args, **kwargs):
+        self.email = self.email.lower()
+        self.username = self.email.lower()
+        self.sex = self.sex.upper()
+        super().save(*args, **kwargs)
+        
 
 class Seller(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True)
