@@ -28,7 +28,7 @@ SECRET_KEY = 'django-insecure-alm2pid6@cv^icjh06zdgk@hs-@k8ffm+@p5wei-q5(+lq9is0
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = senv.DEBUG
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [ 'ujjwalaggarwal.pythonanywhere.com' ]
 CORS_ORIGIN_ALLOW_ALL = True
 CORS_ALLOW_CREDENTIALS = True
 CORS_ORIGIN_WHITELIST = [
@@ -92,9 +92,9 @@ DATABASES = {
         "NAME": senv.DATABASE_NAME,
         "USER": senv.DATABASE_USER,
         "PASSWORD": senv.DATABASE_PASSWORD,
-        "HOST": "localhost",
-        "PORT": "3306",
-        "OPTIONS": {"charset": "utf8mb4", "use_unicode": True},
+        "HOST": "ujjwalaggarwal.mysql.pythonanywhere-services.com",
+#        "PORT": "3306",
+        "OPTIONS": {"charset": "utf8mb4", "use_unicode": True, 'init_command': "SET sql_mode='STRICT_TRANS_TABLES'"},
     }
 }
 
@@ -126,7 +126,7 @@ REST_FRAMEWORK = {
 }
 
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(hours=1000),
+    "ACCESS_TOKEN_LIFETIME": timedelta(days=99999),
     "REFRESH_TOKEN_LIFETIME": timedelta(hours=24),
 }
 
@@ -220,3 +220,4 @@ AUTH_USER_MODEL = "users.User"
 #         }
 #     }
 # }
+
