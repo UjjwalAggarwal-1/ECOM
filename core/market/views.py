@@ -122,7 +122,12 @@ class ItemRetreiveAPI(APIView):
         
         with connection.cursor() as cursor:
             cursor.execute(
-            'SELECT id, name, price, description, total_sale FROM item WHERE id = %s',
+            'SELECT item.id, item.name, price, description, total_sale, concat(user.first_name, " ", user.last_name) as seller_name, \
+            store_name, avg(rating) as rating FROM item \
+            join user on item.seller_id = user.id\
+            left join review on item.id = review.item_id\
+            join seller on item.seller_id = seller.user_id\
+            WHERE item.id = %s',
             [id]
             )
             queryset = cursor.fetchone()
@@ -133,5 +138,38 @@ class ItemRetreiveAPI(APIView):
             "price": queryset[2],
             "description": queryset[3],
             "total_sale": queryset[4],
+            "seller_name": queryset[5],
+            "store_name": queryset[6],
+            "rating": queryset[7],
         }
+
+        with connection.cursor() as cursor:
+            cursor.execute(
+            'SELECT group_concat(image) FROM itemimage WHERE item_id = %s',
+            [id]
+            )
+            queryset = cursor.fetchall()
+        
+        data['images'] = queryset[0]
+
+        with connection.cursor() as cursor:
+            cursor.execute(
+            'SELECT concat(user.first_name, " ", user.last_name) as name, message, rating, image, title FROM review\
+            join `order` on review.order_id = `order`.id\
+            join user on `order`.customer_id = user.id\
+            WHERE item_id = %s',
+            [id]
+            )
+            queryset = cursor.fetchall()
+        
+        reviews = []
+        for review in queryset:
+            reviews.append({
+                'reviewer_name': review[0],
+                'description': review[1],
+                'rating': review[2],
+                'image': review[3],
+                'title': review[4]
+            })
+        data['reviews'] = reviews
         return JsonResponse({'data':data})
