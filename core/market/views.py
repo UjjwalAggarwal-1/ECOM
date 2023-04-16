@@ -15,9 +15,14 @@ class ItemListAPI(APIView):
     def get_data(self):
         with connection.cursor() as cursor:
             cursor.execute(
-            'SELECT id, name, price FROM item'
+            'SELECT item.id, item.name, item.price, concat(user.first_name, " ", user.last_name) as seller_name, \
+            avg(rating) as rating FROM item \
+            join user on item.seller_id = user.id\
+            left join review on item.id = review.item_id\
+            group by item.id\
+            ;'
             )
-            queryset = cursor.fetchall()    
+            queryset = cursor.fetchall()
 
         category = self.request.query_params.get('category', None)
         search = self.request.query_params.get('search', None)
@@ -26,9 +31,13 @@ class ItemListAPI(APIView):
         if category is not None:
             with connection.cursor() as cursor:
                 cursor.execute(
-                    'SELECT item.id, item.name, price FROM item \
+                    'SELECT item.id, item.name, price, concat(user.first_name, " ", user.last_name) as seller_name, \
+                    avg(rating) as rating FROM item \
                     INNER JOIN `category` ON (`item`.`category_id` = `category`.`id`)\
+                    join user on item.seller_id = user.id\
+                    left join review on item.id = review.item_id\
                     WHERE `category`.`name` = %s\
+                    group by item.id\
                     ;', 
                     [category]
                 )
@@ -36,9 +45,14 @@ class ItemListAPI(APIView):
         if search is not None:
             with connection.cursor() as cursor:
                 cursor.execute(
-                "SELECT item.id, item.name, price FROM item INNER JOIN `category` ON (`item`.`category_id` = `category`.`id`) \
+                "SELECT item.id, item.name, price, concat(user.first_name, ' ', user.last_name) as seller_name, \
+                avg(rating) as rating FROM item \
+                INNER JOIN `category` ON (`item`.`category_id` = `category`.`id`) \
+                join user on item.seller_id = user.id\
+                left join review on item.id = review.item_id\
                 WHERE `category`.`name` LIKE %s\
                 OR item.name LIKE %s\
+                group by item.id\
                 ;", 
                 ['%'+search+'%', '%'+search+'%'] 
                 )
@@ -46,7 +60,13 @@ class ItemListAPI(APIView):
         if trending is not None:
             with connection.cursor() as cursor:
                 cursor.execute(
-                'SELECT id, name, price FROM item ORDER BY total_sale DESC LIMIT %s',
+                'SELECT item.id, item.name, item.price, concat(user.first_name, " ", user.last_name) as seller_name, \
+                avg(rating) as rating FROM item \
+                join user on item.seller_id = user.id\
+                left join review on item.id = review.item_id\
+                group by item.id\
+                order by total_sale desc\
+                limit %s;',
                 [int(trending)]
                 )
                 queryset = cursor.fetchall()    
@@ -57,6 +77,8 @@ class ItemListAPI(APIView):
                 "id": item[0],
                 "name": item[1],
                 "price": item[2],
+                "seller_name": item[3],
+                "rating": item[4],
             })
         return data
     
