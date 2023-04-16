@@ -1,8 +1,8 @@
--- MySQL dump 10.13  Distrib 8.0.28, for Win64 (x86_64)
+-- MySQL dump 10.13  Distrib 8.0.31, for Linux (x86_64)
 --
 -- Host: localhost    Database: ecom
 -- ------------------------------------------------------
--- Server version	8.0.28
+-- Server version	8.0.31-0ubuntu0.22.04.1
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -29,7 +29,7 @@ CREATE TABLE `address` (
   `city` varchar(50) NOT NULL,
   `country` varchar(50) NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -55,7 +55,7 @@ CREATE TABLE `address_pincode` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `id` (`id`),
   CONSTRAINT `address_pincode_ibfk_1` FOREIGN KEY (`id`) REFERENCES `address` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -84,7 +84,7 @@ CREATE TABLE `cart` (
   CONSTRAINT `cart_customer_id_fk_customer_user_id` FOREIGN KEY (`customer_id`) REFERENCES `customer` (`user_id`),
   CONSTRAINT `cart_item_id_fk_item_id` FOREIGN KEY (`item_id`) REFERENCES `item` (`id`),
   CONSTRAINT `cart_chk_1` CHECK ((`quantity` >= 0))
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -93,7 +93,7 @@ CREATE TABLE `cart` (
 
 LOCK TABLES `cart` WRITE;
 /*!40000 ALTER TABLE `cart` DISABLE KEYS */;
-INSERT INTO `cart` VALUES (12,6,3);
+INSERT INTO `cart` VALUES (12,6,3),(20,1,1),(20,2,1);
 /*!40000 ALTER TABLE `cart` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -110,7 +110,7 @@ CREATE TABLE `category` (
   `id` int NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `name` (`name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -139,7 +139,7 @@ CREATE TABLE `coupon_code` (
   `used_count` int unsigned NOT NULL DEFAULT '0',
   UNIQUE KEY `code` (`code`),
   CONSTRAINT `coupon_code_chk_1` CHECK (((`discount` >= 0) and (`discount` <= 1)))
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -161,13 +161,12 @@ DROP TABLE IF EXISTS `customer`;
 CREATE TABLE `customer` (
   `user_id` bigint NOT NULL,
   `total_purchases` int unsigned DEFAULT '0',
-  `address_id` int NOT NULL,
-  `store_name` varchar(20) NOT NULL,
+  `address_id` int DEFAULT NULL,
   PRIMARY KEY (`user_id`),
   KEY `customer_address_id_fk_address_id` (`address_id`),
   CONSTRAINT `customer_address_id_fk_address_id` FOREIGN KEY (`address_id`) REFERENCES `address` (`id`),
   CONSTRAINT `customer_user_id_fk_user_id` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -176,7 +175,7 @@ CREATE TABLE `customer` (
 
 LOCK TABLES `customer` WRITE;
 /*!40000 ALTER TABLE `customer` DISABLE KEYS */;
-INSERT INTO `customer` VALUES (12,0,6,'store1'),(16,0,7,'storethis'),(17,0,8,'that store'),(18,0,9,'best store'),(19,0,10,'another great store'),(20,0,1,'worlds\' best store');
+INSERT INTO `customer` VALUES (12,0,6),(16,0,7),(17,0,8),(18,0,9),(19,0,10),(20,0,1),(25,0,NULL),(26,0,NULL);
 /*!40000 ALTER TABLE `customer` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -203,7 +202,7 @@ CREATE TABLE `item` (
   CONSTRAINT `item_category_id_fk_category_id` FOREIGN KEY (`category_id`) REFERENCES `category` (`id`),
   CONSTRAINT `item_seller_id_fk_seller_user_id` FOREIGN KEY (`seller_id`) REFERENCES `seller` (`user_id`),
   CONSTRAINT `item_chk_1` CHECK ((`price` >= 0))
-) ENGINE=InnoDB AUTO_INCREMENT=30 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=30 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -230,7 +229,7 @@ CREATE TABLE `itemimage` (
   PRIMARY KEY (`id`),
   KEY `itemimage_item_id_fk_item_id` (`item_id`),
   CONSTRAINT `itemimage_item_id_fk_item_id` FOREIGN KEY (`item_id`) REFERENCES `item` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -262,7 +261,7 @@ CREATE TABLE `order` (
   KEY `order_coupon_code_name_fk_coupon_code` (`coupon_code_name`),
   CONSTRAINT `order_coupon_code_name_fk_coupon_code` FOREIGN KEY (`coupon_code_name`) REFERENCES `coupon_code` (`code`),
   CONSTRAINT `order_customer_id_fk_customer_user_id` FOREIGN KEY (`customer_id`) REFERENCES `customer` (`user_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -300,7 +299,7 @@ CREATE TABLE `orderitem` (
   CONSTRAINT `orderitem_to_address_id_fk_address_id` FOREIGN KEY (`to_address_id`) REFERENCES `address` (`id`),
   CONSTRAINT `orderitem_chk_1` CHECK ((`quantity` >= 0)),
   CONSTRAINT `orderitem_chk_2` CHECK ((`price` >= 0))
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -330,7 +329,7 @@ CREATE TABLE `review` (
   CONSTRAINT `review_item_id_fk_item_id` FOREIGN KEY (`item_id`) REFERENCES `item` (`id`),
   CONSTRAINT `review_order_id_fk_order_id` FOREIGN KEY (`order_id`) REFERENCES `order` (`id`),
   CONSTRAINT `review_chk_1` CHECK ((`rating` >= 0))
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -353,12 +352,13 @@ DROP TABLE IF EXISTS `seller`;
 CREATE TABLE `seller` (
   `user_id` bigint NOT NULL,
   `total_sales` int unsigned DEFAULT '0',
-  `address_id` int NOT NULL,
+  `address_id` int DEFAULT NULL,
+  `store_name` varchar(50) DEFAULT NULL,
   PRIMARY KEY (`user_id`),
   KEY `seller_address_id_fk_address_id` (`address_id`),
   CONSTRAINT `seller_address_id_fk_address_id` FOREIGN KEY (`address_id`) REFERENCES `address` (`id`),
   CONSTRAINT `seller_user_id_fk_user_id` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -367,7 +367,7 @@ CREATE TABLE `seller` (
 
 LOCK TABLES `seller` WRITE;
 /*!40000 ALTER TABLE `seller` DISABLE KEYS */;
-INSERT INTO `seller` VALUES (16,0,1),(17,0,2),(18,0,3),(19,0,4),(20,0,5);
+INSERT INTO `seller` VALUES (16,0,1,'store name given'),(17,0,2,'store name given'),(18,0,3,'store name given'),(19,0,4,'store name given'),(20,0,5,'store name given'),(25,0,NULL,'No Store Name'),(26,0,NULL,NULL);
 /*!40000 ALTER TABLE `seller` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -394,7 +394,7 @@ CREATE TABLE `user` (
   UNIQUE KEY `email` (`email`),
   UNIQUE KEY `mobile` (`mobile`),
   CONSTRAINT `user_chk_1` CHECK ((`age` >= 0))
-) ENGINE=InnoDB AUTO_INCREMENT=21 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=27 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -403,7 +403,7 @@ CREATE TABLE `user` (
 
 LOCK TABLES `user` WRITE;
 /*!40000 ALTER TABLE `user` DISABLE KEYS */;
-INSERT INTO `user` VALUES (12,'!35a8lIhPbMTZTCDICFstVUISwacueHn8TEtimSY9','user0@test.com','9800989800','','',0,NULL,'2023-04-11 14:34:36.895416',NULL,NULL),(16,'!35a8lIhPbMTZTCDICFstVUISwacueHn8TEtimSY9','user1@test.com','9898989801','','',0,NULL,'2023-04-11 14:34:36.895416',NULL,NULL),(17,'!35a8lIhPbMTZTCDICFstVUISwacueHn8TEtimSY9','user2@test.com','9898989802','','',0,NULL,'2023-04-11 14:34:36.895416',NULL,NULL),(18,'!35a8lIhPbMTZTCDICFstVUISwacueHn8TEtimSY9','user3@test.com','9898989803','','',0,NULL,'2023-04-11 14:34:36.895416',NULL,NULL),(19,'!35a8lIhPbMTZTCDICFstVUISwacueHn8TEtimSY9','user4@test.com','9898989804','','',0,NULL,'2023-04-11 14:34:36.895416',NULL,NULL),(20,'!35a8lIhPbMTZTCDICFstVUISwacueHn8TEtimSY9','user5@test.com','9898989805','','',0,NULL,'2023-04-11 14:34:36.895416',NULL,NULL);
+INSERT INTO `user` VALUES (12,'!35a8lIhPbMTZTCDICFstVUISwacueHn8TEtimSY9','user0@test.com','9800989800','','',0,NULL,'2023-04-11 14:34:36.895416',NULL,NULL),(16,'!35a8lIhPbMTZTCDICFstVUISwacueHn8TEtimSY9','user1@test.com','9898989801','','',0,NULL,'2023-04-11 14:34:36.895416',NULL,NULL),(17,'!35a8lIhPbMTZTCDICFstVUISwacueHn8TEtimSY9','user2@test.com','9898989802','','',0,NULL,'2023-04-11 14:34:36.895416',NULL,NULL),(18,'!35a8lIhPbMTZTCDICFstVUISwacueHn8TEtimSY9','user3@test.com','9898989803','','',0,NULL,'2023-04-11 14:34:36.895416',NULL,NULL),(19,'!35a8lIhPbMTZTCDICFstVUISwacueHn8TEtimSY9','user4@test.com','9898989804','','',0,NULL,'2023-04-11 14:34:36.895416',NULL,NULL),(20,'!35a8lIhPbMTZTCDICFstVUISwacueHn8TEtimSY9','user5@test.com','9898989805','fname','lname',44,'M','2023-04-11 14:34:36.895416',NULL,NULL),(25,'86f7e437faa5a7fce15d1ddcb9eaeaea377667b8','root@isadmin.true','234','','',1,'','2023-04-16 23:50:00.000000',NULL,NULL),(26,'86f7e437faa5a7fce15d1ddcb9eaeaea377667b8','roo1t@isadmin.true','2343','','',1,'','2023-04-16 23:51:50.000000',NULL,NULL);
 /*!40000 ALTER TABLE `user` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -416,4 +416,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2023-04-16 18:51:12
+-- Dump completed on 2023-04-17  0:01:52
