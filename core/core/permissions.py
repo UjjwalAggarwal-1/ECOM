@@ -1,5 +1,5 @@
 from rest_framework import permissions
-
+from django.db import connection
 
 class SellerPermission(permissions.IsAuthenticated):
     def has_permission(self, request, view):
@@ -19,3 +19,15 @@ class IsOwnerOrReadOnly(permissions.BasePermission):
         if request.method in permissions.SAFE_METHODS:
             return True
         return obj.owner == request.user
+
+
+class IsAuthenticatedByID(permissions.BasePermission):
+    def has_permission(self, request, view):
+        if not request.META.get('HTTP_USER_ID'):
+            return False
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT * FROM user WHERE id =%s", 
+                [int(request.META['HTTP_USER_ID'])]
+            )
+            return not not cursor.fetchone()

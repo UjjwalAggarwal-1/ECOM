@@ -1,76 +1,115 @@
-from rest_framework import viewsets, generics
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from core.exceptions import CustomValidationError
-from django.db import transaction
-from django.conf import settings
 from core.helpers import check_keys
-from rest_framework.permissions import IsAuthenticated
-from django.utils import timezone
-from .models import *
-from .serializers import *
-from core.permissions import *
+from core.permissions import IsAuthenticatedByID
+from django.db import connection
+from django.http.response import JsonResponse
 
 
-class ItemListAPI(generics.ListAPIView):
-    serializer_class = ItemListSerializer
+class ItemListAPI(APIView):
+
     permission_classes = []
+    fields = ("id", "name", "price",)
 
-    def get_queryset(self):
-        queryset = Item.objects.raw(
-            'SELECT * FROM market_item'
+    def get_data(self):
+        with connection.cursor() as cursor:
+            cursor.execute(
+            'SELECT id, name, price FROM item'
             )
+            queryset = cursor.fetchall()    
+
         category = self.request.query_params.get('category', None)
         search = self.request.query_params.get('search', None)
         trending = self.request.query_params.get('trending', None)
-        # if category and search:
-        #     return None
+        
         if category is not None:
-            queryset = Item.objects.raw(
-                'SELECT *  FROM `market_item` \
-                INNER JOIN `market_category` ON (`market_item`.`category_id` = `market_category`.`id`)\
-                WHERE `market_category`.`name` = %s', 
-                [category]
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    'SELECT item.id, item.name, price FROM item \
+                    INNER JOIN `category` ON (`item`.`category_id` = `category`.`id`)\
+                    WHERE `category`.`name` = %s\
+                    ;', 
+                    [category]
                 )
+                queryset = cursor.fetchall()    
         if search is not None:
-            queryset = Item.objects.raw(
-                'SELECT * FROM market_item \
-                INNER JOIN `market_category` ON (`market_item`.`category_id` = `market_category`.`id`)\
-                WHERE market_item.name LIKE %s \
-                UNION SELECT * FROM market_item \
-                INNER JOIN `market_category` ON (`market_item`.`category_id` = `market_category`.`id`)\
-                WHERE `market_category`.`name` LIKE %s', 
+            with connection.cursor() as cursor:
+                cursor.execute(
+                "SELECT item.id, item.name, price FROM item INNER JOIN `category` ON (`item`.`category_id` = `category`.`id`) \
+                WHERE `category`.`name` LIKE %s\
+                OR item.name LIKE %s\
+                ;", 
                 ['%'+search+'%', '%'+search+'%'] 
                 )
-            
+                queryset = cursor.fetchall()    
         if trending is not None:
-            queryset = Item.objects.raw(
-                'SELECT * FROM market_item ORDER BY total_sale DESC LIMIT %s',
+            with connection.cursor() as cursor:
+                cursor.execute(
+                'SELECT id, name, price FROM item ORDER BY total_sale DESC LIMIT %s',
                 [int(trending)]
                 )
-        return queryset
+                queryset = cursor.fetchall()    
+
+        data = []
+        for item in queryset:
+            data.append({
+                "id": item[0],
+                "name": item[1],
+                "price": item[2],
+            })
+        return data
+    
+    def get(self, request):
+        data = self.get_data()
+        return JsonResponse({'data':data})
 
 
-class CategoryListAPI(generics.ListAPIView):
-    serializer_class = CategorySerializer
+class CategoryListAPI(APIView):
     permission_classes = []
-    queryset = Category.objects.raw(
-        'SELECT * FROM market_category'
-        )
+    
+    def get_data(self):
+        with connection.cursor() as cursor:
+            cursor.execute(
+            'SELECT id, name, image FROM category'
+            )
+            queryset = cursor.fetchall()    
+        data = []
+        for category in queryset:
+            data.append({
+                "id": category[0],
+                "name": category[1],
+                "image": category[2],
+            })
+        return data
+
+    
+    def get(self, request):
+        data = self.get_data()
+        return JsonResponse({'data':data})
 
 
 class ItemRetreiveAPI(APIView):
-    serializer_class = ItemSerializer
     permission_classes = []
-    queryset = Item.objects.all()
+
 
     def get(self, request):
-        pk = self.request.query_params.get('id', None)
-        if not pk:
+        id = self.request.query_params.get('id', None)
+        if not id:
             raise CustomValidationError("Invalid request Parameters")
         
-        item = Item.objects.filter(pk=pk).first()
-        if not item:
-            raise CustomValidationError("Item does not exist")
+        with connection.cursor() as cursor:
+            cursor.execute(
+            'SELECT id, name, price, description, total_sale FROM item WHERE id = %s',
+            [id]
+            )
+            queryset = cursor.fetchone()
         
-        return Response(ItemSerializer(item).data)
+        data = {
+            "id": queryset[0],
+            "name": queryset[1],
+            "price": queryset[2],
+            "description": queryset[3],
+            "total_sale": queryset[4],
+        }
+        return JsonResponse({'data':data})

@@ -28,7 +28,7 @@ SECRET_KEY = 'django-insecure-alm2pid6@cv^icjh06zdgk@hs-@k8ffm+@p5wei-q5(+lq9is0
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = senv.DEBUG
 
-ALLOWED_HOSTS = [ 'ujjwalaggarwal.pythonanywhere.com' ]
+ALLOWED_HOSTS = [ 'ujjwalaggarwal.pythonanywhere.com', 'localhost' ]
 CORS_ORIGIN_ALLOW_ALL = True
 CORS_ALLOW_CREDENTIALS = True
 CORS_ORIGIN_WHITELIST = [
@@ -118,9 +118,9 @@ AUTH_PASSWORD_VALIDATORS = [
 
 
 REST_FRAMEWORK = {
-    "DEFAULT_AUTHENTICATION_CLASSES": [
-        "rest_framework_simplejwt.authentication.JWTAuthentication",
-    ],
+    # "DEFAULT_AUTHENTICATION_CLASSES": [
+    #     "rest_framework_simplejwt.authentication.JWTAuthentication",
+    # ],
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.LimitOffsetPagination",
 }
 

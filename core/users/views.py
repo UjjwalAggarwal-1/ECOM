@@ -1,23 +1,11 @@
-from rest_framework import viewsets, generics
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from core.exceptions import CustomValidationError
-from .models import *
-from market.serializers import *
-from django.db import transaction
-from django.contrib.auth import authenticate, login
-from django.conf import settings
-from core.helpers import check_keys
-from rest_framework_simplejwt.tokens import RefreshToken
-from .serializers import *
-from rest_framework.permissions import IsAuthenticated
-from django.utils import timezone
-from django.contrib.auth import logout
-from rest_framework_simplejwt.views import TokenRefreshView
+
+from core.permissions import IsAuthenticatedByID
+from core.helpers import check_keys, get_user_from_request
 from django.db import connection
-
 from django.contrib.auth import get_user_model
-
 User = get_user_model()
 
 
@@ -31,7 +19,7 @@ class Register(APIView):
             first_name = request.data.get("first_name", "")
             last_name = request.data.get("last_name", "")
             mobile = request.data["mobile"]
-            age = request.data.get("age", 0)
+            age = request.data.get("age", 1)
             sex = request.data.get("sex", "")
         except KeyError:
             raise CustomValidationError("Invalid request Parameters")
@@ -40,77 +28,50 @@ class Register(APIView):
             raise CustomValidationError("Passwords do not match!")
 
         with connection.cursor() as cursor:
-            # if User.objects.filter(email=email).exists():
-            #     raise CustomValidationError("Email Already Registered!")
             cursor.execute(
-                "SELECT * FROM users_user WHERE email =%s", 
+                "SELECT * FROM user WHERE email =%s", 
                 [email]
             )
             user = cursor.fetchone()
             if user:
                 raise CustomValidationError("Email Already Registered!")
-            
-            # if User.objects.filter(mobile=mobile).exists():
-            #     raise CustomValidationError("Mobile Number Already Registered!")
+
             cursor.execute(
-                "SELECT * FROM users_user WHERE mobile =%s", 
+                "SELECT * FROM user WHERE mobile =%s", 
                 [mobile]
             )
             user = cursor.fetchone()
             if user:
                 raise CustomValidationError("Mobile Number Already Registered!")
         
-        with transaction.atomic():
-            try:
-                user = User.objects.create_user(
-                    username = email,
-                    email=email,
-                    first_name=first_name,
-                    last_name=last_name,
-                    mobile=mobile,
-                    age=age,
-                    sex = sex
+            with connection.cursor() as cursor:
+                cursor.execute(
+                """
+                start transaction;
+                insert into user (first_name, last_name, age, sex, email, password, mobile, date_joined)
+                values (%s, %s, %s, %s, %s, (select sha1(%s)), %s, now());
+                set @user_id = last_insert_id();
+                insert into customer (user_id, total_purchases) values (@user_id, 0);
+                insert into seller (user_id, total_sales) values (@user_id, 0);
+                commit;
+                """,
+                [first_name, last_name, age, sex, email, password, mobile]
                 )
-                user.set_password(password)
-                user.save()
-                user_id = user.id
-
-                with connection.cursor() as cursor:
-                    # Customer.objects.create(user=user)
-                    cursor.execute(
-                        "INSERT INTO users_customer (user_id, total_purchases) VALUES (%s, 0)",
-                          [user_id] 
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    "SELECT id FROM user WHERE email =%s", 
+                    [email]
+                )
+                user = cursor.fetchone()
+                if not user:
+                    raise CustomValidationError("Registration Failed!")
+                else:
+                    return Response(
+                        {
+                            "message": "Registration Successful!",
+                            "user_id": user[0],
+                        }
                     )
-                    # Seller.objects.create(user=user)
-                    cursor.execute(
-                        "INSERT INTO users_seller (user_id, total_sales) VALUES (%s, 0)",
-                          [user_id] 
-                    )
-
-            except Exception as e:
-                print("errror", str(e))
-                raise CustomValidationError("Unable to register. Try again later.")
-        return Response(
-            {
-                "message": "Registration Successful!",
-                "user": UserSerializer(user).data,
-            }
-        )
-    
-def login_response(user):
-    if not user:
-        raise CustomValidationError("Invalid Credentials")
-    refresh = RefreshToken.for_user(user)
-    response = Response()
-    response.data = {
-            "message": "Login Successful",
-            **UserLoginResponseSerializer(user).data,
-            "access": str(refresh.access_token),
-            # "refresh": str(refresh),
-            # **settings.SIMPLE_JWT,
-        }
-
-    return response
 
 
 class Login(APIView):
@@ -120,86 +81,146 @@ class Login(APIView):
         check_keys(data, ["email", "password"])
         email = data.get("email", None)
         password = data.get("password", None)
-        auth_user = authenticate(username=email, password=password)
-        if not auth_user:
-            raise CustomValidationError("Invalid credentials")
 
-        login(request, auth_user)
-        auth_user.last_login = timezone.now()
-        auth_user.save()
+        with connection.cursor() as cursor:
+            cursor.execute("\
+            select id from user where email = %s and password = (select sha1(%s));\
+            ",
+            [email, password],
+            )
+            user = cursor.fetchone()
+            if user:
+                return Response(
+                    {
+                        "message": "Login Successful",
+                        "user_id": user[0],
+                    }
+                )
+            else:
+                raise CustomValidationError("Invalid Credentials")
 
-        return login_response(auth_user)
 
+class ProfileDetailAPI(APIView):
+    permission_classes = (IsAuthenticatedByID,)
 
-class Logout(APIView):
-    def post(self, request):
-        logout(request)
+    def get(self, request):
+        user = get_user_from_request(request)
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT total_purchases, address_line1, address_line2, city, country, pincode FROM customer\
+                join address on customer.address_id = address.id \
+                join address_pincode on address.id = address_pincode.id \
+                WHERE user_id = %s", 
+                [user.get('id')]
+            )
+            customer = cursor.fetchone()
+            customer_data = {}
+            if customer:
+                customer_data = {
+                    "total_purchases": customer[0],
+                    "address_line1": customer[1],
+                    "address_line2": customer[2],
+                    "city": customer[3],
+                    "country": customer[4],
+                    "pincode": customer[5]
+                }
+
+            cursor.execute(
+                "SELECT total_sales, store_name, address_line1, address_line2, city, country, pincode FROM seller\
+                join address on seller.address_id = address.id \
+                join address_pincode on address.id = address_pincode.id \
+                WHERE user_id = %s", 
+                [user.get('id')]
+            )
+            seller = cursor.fetchone()
+            seller_data = {}
+            if seller:
+                seller_data = {
+                    "total_sales": seller[0],
+                    "store_name": seller[1],
+                    "address_line1": seller[2],
+                    "address_line2": seller[3],
+                    "city": seller[4],
+                    "country": seller[5],
+                    "pincode": seller[6]
+                }
+
         return Response(
             {
-                "message": "Logout Successful",
+                "data": {
+                    "user": user,
+                    'seller': seller_data,
+                    'customer': customer_data
+                }
             }
         )
 
 
-class ProfileDetailAPI(generics.RetrieveAPIView):
-    permission_classes = (IsAuthenticated,)
-    serializer_class = UserLoginResponseSerializer
+class ViewCartAPI(APIView):
+    permission_classes = (IsAuthenticatedByID,)
 
-    def get_object(self):
-        user_id = self.request.user.id
-        user = User.objects.raw(
-                "SELECT * FROM users_user WHERE id = %s", 
-                [user_id]
+    def get(self, request):
+        user = get_user_from_request(request)
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT * FROM cart\
+                join item on cart.item_id = item.id\
+                WHERE customer_id = %s", 
+                [user.get('id')]
             )
-        if not user:
-            return None
-        user = user[0]
-        return user
+            cart_items = cursor.fetchall()
+            cart_items = [
+                {
+                    "item_id": item[1],
+                    "quantity": item[2],
+                    "price": item[3]
+                } for item in cart_items
+            ]
+
+        return Response(
+            {
+                "data": {
+                    "cart_items": cart_items
+                }
+            }
+        )    
 
 
-class ViewCartAPI(generics.ListAPIView):
-    permission_classes = (IsAuthenticated,)
-    serializer_class = CartSerializer
+class UpdateCartAPI(APIView):
 
-    def get_queryset(self):
-        user_id = self.request.user.id
-        cart_items = Cart.objects.raw(
-            "SELECT * FROM users_cart WHERE customer_id = %s", 
-            [user_id]
-        )
-        return cart_items
-    
+    permission_classes = (IsAuthenticatedByID,)
 
-class UpdateCartAPI(generics.UpdateAPIView):
-
-    permission_classes = (IsAuthenticated,)
-    serializer_class = CartSerializer
-
-    def get_object(self):
-        item_id = self.request.data.get("item_id")
-        if not item_id:
-            raise CustomValidationError("Invalid request parameters")
-        
-        user_id = self.request.user.id
-        
-        cart_item = Cart.objects.raw(
-            "SELECT * FROM users_cart WHERE customer_id = %s AND item_id = %s", 
-            [user_id, item_id]
-        )
-        if not cart_item:
-            return None
-        cart_item = cart_item[0]
-        return cart_item
-    
     def post(self, request):
         data = request.data
         check_keys(data, ["item_id", "quantity"])
-        cart_item = self.get_object()
+
+        item_id = self.request.data.get("item_id")
+        user_id = get_user_from_request(self.request).get('id')
+        
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT * FROM cart\
+                WHERE customer_id = %s AND item_id = %s", 
+                [user_id, item_id]
+            )
+            cart_item = cursor.fetchall()
+
         if not cart_item:
+            cart_item = None
+        else:
+            cart_item = cart_item[0]
+
+        if not cart_item:
+            if int(data['quantity']) == 0:
+                return Response(
+                    {
+                        "message": "Item fell out of cart",
+                    }
+                )
             with connection.cursor() as cursor:
                 cursor.execute(
-                    "INSERT INTO users_cart (customer_id, item_id, quantity) VALUES (%s, %s, %s)", 
-                    [request.user.id, int(data["item_id"]), int(data["quantity"])],
+                    "INSERT INTO cart (customer_id, item_id, quantity) VALUES (%s, %s, %s)", 
+                    [user_id, int(data["item_id"]), int(data["quantity"])],
                 )
             return Response(
                 {
@@ -209,8 +230,8 @@ class UpdateCartAPI(generics.UpdateAPIView):
         if int(data["quantity"]) == 0:
             with connection.cursor() as cursor:
                 cursor.execute(
-                    "DELETE FROM users_cart WHERE customer_id = %s AND item_id = %s", 
-                    [request.user.id, data["item_id"]]
+                    "DELETE FROM cart WHERE customer_id = %s AND item_id = %s", 
+                    [user_id, data["item_id"]]
                 )
             return Response(
                 {
@@ -220,8 +241,8 @@ class UpdateCartAPI(generics.UpdateAPIView):
         
         with connection.cursor() as cursor:
             cursor.execute(
-                "UPDATE users_cart SET quantity = %s WHERE customer_id = %s AND item_id = %s", 
-                [int(data['quantity']), request.user.id, int(data["item_id"])]
+                "UPDATE cart SET quantity = %s WHERE customer_id = %s AND item_id = %s", 
+                [int(data['quantity']), user_id, int(data["item_id"])]
             )
         return Response(
             {
@@ -230,26 +251,107 @@ class UpdateCartAPI(generics.UpdateAPIView):
         )
     
 
-class UpdateUserAPI(generics.UpdateAPIView):
-    model = User
-    permission_classes = (IsAuthenticated,)
-    serializer_class = FullUserSerializer
+class UpdateUserAPI(APIView):
+    permission_classes = (IsAuthenticatedByID,)
 
-    def get_object(self):
-        return self.request.user
+    def put(self, request):
+        user = get_user_from_request(request)
+        data = request.data
+        check_keys(data, ["first_name", "last_name", 'age', 'sex'])
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "UPDATE user \
+                set first_name = %s,\
+                last_name = %s,\
+                age = %s,\
+                sex = %s \
+                where id = %s",
+                [
+                    data["first_name"],
+                    data["last_name"],
+                    data["age"],
+                    data["sex"],
+                    user.get('id')
+                ]
+            )
+        return Response({'detail':"User updated"})
 
-class UpdateCustomerAPI(generics.UpdateAPIView):
-    model = Customer
-    permission_classes = (IsAuthenticated,)
-    serializer_class = FullCustomerSerializer
 
-    def get_object(self):
-        return self.request.user.customer
+class UpdateCustomerAPI(APIView):
+    permission_classes = (IsAuthenticatedByID,)
 
-class UpdateSellerAPI(generics.UpdateAPIView):
-    model = Seller
-    permission_classes = (IsAuthenticated,)
-    serializer_class = FullSellerSerializer
+    def patch(self, request):
+        user = get_user_from_request(request)
+        data = request.data
+        check_keys(data, ["address_line1", "address_line2", "city", "country", "pincode"])
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT id FROM address WHERE address_line1 = %s AND address_line2 = %s AND city = %s AND country = %s", 
+                [data["address_line1"], data["address_line2"], data["city"], data["country"]]
+            )
+            address = cursor.fetchone()
+            if not address:
+                cursor.execute(
+                    "INSERT INTO address (address_line1, address_line2, city, country) VALUES (%s, %s, %s, %s) RETURNING id", 
+                    [data["address_line1"], data["address_line2"], data["city"], data["country"]]
+                )
+                address = cursor.fetchone()
+            address_id = address[0]
+            cursor.execute(
+                "SELECT id FROM address_pincode WHERE id = %s AND pincode = %s", 
+                [address_id, data["pincode"]]
+            )
+            address_pincode = cursor.fetchone()
+            if not address_pincode:
+                cursor.execute(
+                    "INSERT INTO address_pincode (id, pincode) VALUES (%s, %s)", 
+                    [address_id, data["pincode"]]
+                )
+            cursor.execute(
+                "SELECT id FROM customer WHERE user_id = %s", 
+                [user.get('id')]
+            )
+            cursor.execute(
+                "UPDATE customer SET address_id = %s WHERE user_id = %s", 
+                [address_id, user.get('id')]
+            )
+        return Response({'detail':"Customer updated"})
 
-    def get_object(self):
-        return self.request.user.seller
+
+class UpdateSellerAPI(APIView):
+    permission_classes = (IsAuthenticatedByID,)
+
+    def patch(self, request):
+        user = get_user_from_request(request)
+        data = request.data
+        check_keys(data, ["store_name", "address_line1", "address_line2", "city", "country", "pincode"])
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT id FROM address WHERE address_line1 = %s AND address_line2 = %s AND city = %s AND country = %s", 
+                [data["address_line1"], data["address_line2"], data["city"], data["country"]]
+            )
+            address = cursor.fetchone()
+            if not address:
+                cursor.execute(
+                    "INSERT INTO address (address_line1, address_line2, city, country) VALUES (%s, %s, %s, %s) RETURNING id", 
+                    [data["address_line1"], data["address_line2"], data["city"], data["country"]]
+                )
+                address = cursor.fetchone()
+            address_id = address[0]
+            cursor.execute(
+                "SELECT id FROM address_pincode WHERE id = %s AND pincode = %s", 
+                [address_id, data["pincode"]]
+            )
+            address_pincode = cursor.fetchone()
+            if not address_pincode:
+                cursor.execute(
+                    "INSERT INTO address_pincode (id, pincode) VALUES (%s, %s)", 
+                    [address_id, data["pincode"]]
+                )
+            
+            cursor.execute(
+                "UPDATE seller SET store_name = %s, address_id = %s WHERE user_id = %s", 
+                [data["store_name"], address_id, user.get('id')]
+            )
+
+        return Response({'detail':"Seller updated"})
