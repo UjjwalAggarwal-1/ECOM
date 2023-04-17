@@ -11,4 +11,5 @@ urlpatterns = [
     path('update-user/', UpdateUserAPI.as_view(), name='update-user'),
     path('update-customer/', UpdateCustomerAPI.as_view(), name='update-customer'),
     path('update-seller/', UpdateSellerAPI.as_view(), name='update-seller'),
+    path('place-order/', PlaceOrderAPI.as_view(), name='place-order'),
 ]

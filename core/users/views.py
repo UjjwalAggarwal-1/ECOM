@@ -163,7 +163,7 @@ class ViewCartAPI(APIView):
         user = get_user_from_request(request)
         with connection.cursor() as cursor:
             cursor.execute(
-                "SELECT * FROM cart\
+                "SELECT item.id, item.id, cart.quantity, item.price FROM cart\
                 join item on cart.item_id = item.id\
                 WHERE customer_id = %s", 
                 [user.get('id')]
@@ -355,3 +355,69 @@ class UpdateSellerAPI(APIView):
             )
 
         return Response({'detail':"Seller updated"})
+    
+
+class PlaceOrderAPI(APIView):
+    permission_classes = (IsAuthenticatedByID,)
+
+    def post(self, request):
+        user = get_user_from_request(request)
+        data = request.data
+        # check_keys(data, ["payment_method"])
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT user_id FROM customer WHERE user_id = %s", 
+                [user.get('id')]
+            )
+            customer = cursor.fetchone()
+            if not customer:
+                return Response(
+                    {
+                        "message": "You are not a customer",
+                    }
+                )
+            customer_id = customer[0]
+            cursor.execute(
+                "SELECT customer_id, customer_id, item_id, quantity FROM cart WHERE customer_id = %s", 
+                [customer_id]
+            )
+            cart_items = cursor.fetchall()
+            if not cart_items:
+                return Response(
+                    {
+                        "message": "Your cart is empty",
+                    }
+                )
+            cursor.execute(
+                'select sum(price*quantity) as total from cart join item on cart.item_id = item.id where customer_id = %s',
+                [customer_id]
+            )
+            total = cursor.fetchone()[0]
+            cursor.execute(
+                "set @gen_uid = concat(%s, sha1(now()));\
+                INSERT INTO `order` (customer_id, amount, uid) VALUES (%s, %s, @gen_uid );\
+                ;", 
+                [customer_id, customer_id, total]
+            )
+            cursor.execute(
+                "SELECT max(id) FROM `order`"
+            )
+            order_id = cursor.fetchone()[0]
+
+            for cart_item in cart_items:
+                cursor.execute(
+                    "start transaction;"
+                    "set @price = (select price from item where id = %s);"
+                    "set @from_address_id = (select address_id from seller where user_id = %s);"
+                    "set @to_address_id = (select address_id from customer where user_id = %s);"
+                    "INSERT INTO orderitem (order_id, item_id, quantity, price, from_address_id, to_address_id, status) VALUES\
+                    (%s, %s, %s, @price, @from_address_id, @to_address_id, 'ORDER_PLACED');"
+                    "DELETE FROM cart WHERE customer_id = %s AND item_id = %s;"
+                    "commit;", 
+                    [cart_item[2]]+
+                    [user.get('id')]+
+                    [user.get('id')]+
+                    [order_id, cart_item[2], cart_item[3]]+
+                    [customer_id, cart_item[2]]
+                    )
+        return Response({'detail':"Order placed"})
