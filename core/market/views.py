@@ -121,7 +121,17 @@ class CategoryListAPI(APIView):
 
     def get_data(self):
         with connection.cursor() as cursor:
-            cursor.execute("SELECT id, name, image FROM category")
+            cursor.execute(
+                "SELECT category.id, category.name, image "
+                "FROM category "
+                "JOIN "
+                "item on item.category_id = category_id "
+                "ORDER BY "
+                "count(*) "
+                "GROUP BY "
+                "category.id "
+                ";"
+                )
             queryset = cursor.fetchall()
         data = []
         for category in queryset:
