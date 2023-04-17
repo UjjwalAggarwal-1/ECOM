@@ -310,7 +310,7 @@ class UpdateCartAPI(APIView):
             if int(data["quantity"]) == 0:
                 return Response(
                     {
-                        "message": "Item fell out of cart",
+                        "message": "Item not in cart",
                     }
                 )
             with connection.cursor() as cursor:
