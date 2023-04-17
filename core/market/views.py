@@ -126,10 +126,10 @@ class CategoryListAPI(APIView):
                 "FROM category "
                 "JOIN "
                 "item on item.category_id = category_id "
-                "ORDER BY "
-                "count(*) "
                 "GROUP BY "
                 "category.id "
+                "ORDER BY "
+                "count(item.id) DESC"
                 ";"
                 )
             queryset = cursor.fetchall()
