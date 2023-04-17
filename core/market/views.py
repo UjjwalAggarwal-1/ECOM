@@ -30,7 +30,7 @@ class ItemListAPI(APIView):
                 "price, "
                 "description, "
                 "total_sale, "
-                "concat(user.first_name, " ", user.last_name) as seller_name, "
+                "concat(user.first_name, ' ', user.last_name) as seller_name, "
                 "store_name, "
                 "ifnull(avg(rating),0) as rating, "
                 "item.mrp, "
