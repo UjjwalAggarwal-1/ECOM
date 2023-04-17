@@ -24,12 +24,28 @@ class ItemListAPI(APIView):
     def get_data(self):
         with connection.cursor() as cursor:
             cursor.execute(
-                'SELECT item.id, item.name, item.price, concat(user.first_name, " ", user.last_name) as seller_name, \
-            ifnull(avg(rating),0) as rating,item.mrp, (item.mrp-item.price)*100/item.mrp as discount FROM item \
-            join user on item.seller_id = user.id\
-            left join review on item.id = review.item_id\
-            group by item.id\
-            ;'
+            "SELECT "
+                "item.id, "
+                "item.name, "
+                "price, "
+                "description, "
+                "total_sale, "
+                "concat(user.first_name, " ", user.last_name) as seller_name, "
+                "store_name, "
+                "ifnull(avg(rating),0) as rating, "
+                "item.mrp, "
+                "(item.mrp-item.price)*100/item.mrp as discount, "
+                "itemimage.image "
+            "FROM "
+                "item "
+                "join user on item.seller_id = user.id "
+                "left join review on item.id = review.item_id "
+                "join seller on item.seller_id = seller.user_id "
+                "join itemimage on itemimage.item_id = item.id "
+            "WHERE "
+                "item.id = 1"
+                "limit 1"
+                ";"
             )
             queryset = cursor.fetchall()
 
@@ -41,10 +57,11 @@ class ItemListAPI(APIView):
             with connection.cursor() as cursor:
                 cursor.execute(
                     'SELECT item.id, item.name, price, concat(user.first_name, " ", user.last_name) as seller_name, \
-                    ifnull(avg(rating),0) as rating, item.mrp, (item.mrp-item.price)*100/item.mrp as discount FROM item \
+                    ifnull(avg(rating),0) as rating, item.mrp, (item.mrp-item.price)*100/item.mrp as discount, itemimage.image FROM item \
                     INNER JOIN `category` ON (`item`.`category_id` = `category`.`id`)\
                     join user on item.seller_id = user.id\
                     left join review on item.id = review.item_id\
+                    join itemimage on itemimage.item_id = item.id \
                     WHERE `category`.`name` = %s\
                     group by item.id\
                     ;',
@@ -55,10 +72,11 @@ class ItemListAPI(APIView):
             with connection.cursor() as cursor:
                 cursor.execute(
                     "SELECT item.id, item.name, price, concat(user.first_name, ' ', user.last_name) as seller_name, \
-                ifnull(avg(rating),0) as rating, item.mrp, (item.mrp-item.price)*100/item.mrp as discount FROM item \
+                ifnull(avg(rating),0) as rating, item.mrp, (item.mrp-item.price)*100/item.mrp as discount, itemimage.image FROM item \
                 INNER JOIN `category` ON (`item`.`category_id` = `category`.`id`) \
                 join user on item.seller_id = user.id\
                 left join review on item.id = review.item_id\
+                join itemimage on itemimage.item_id = item.id \
                 WHERE `category`.`name` LIKE %s\
                 OR item.name LIKE %s\
                 group by item.id\
@@ -70,9 +88,10 @@ class ItemListAPI(APIView):
             with connection.cursor() as cursor:
                 cursor.execute(
                     'SELECT item.id, item.name, item.price, concat(user.first_name, " ", user.last_name) as seller_name, \
-                ifnull(avg(rating),0) as rating, item.mrp, (item.mrp-item.price)*100/item.mrp as discount FROM item \
+                ifnull(avg(rating),0) as rating, item.mrp, (item.mrp-item.price)*100/item.mrp as discount, itemimage.image FROM item \
                 join user on item.seller_id = user.id\
                 left join review on item.id = review.item_id\
+                join itemimage on itemimage.item_id = item.id \
                 group by item.id\
                 order by total_sale desc\
                 limit %s;',
@@ -91,6 +110,7 @@ class ItemListAPI(APIView):
                     "rating": float(item[4]),
                     "mrp" : item[5],
                     "discount": float(item[6]),
+                    "image" : item[7],
                 }
             )
         return data
