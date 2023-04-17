@@ -552,7 +552,7 @@ class PlaceOrderAPI(APIView):
             total = cursor.fetchone()[0]
             cursor.execute(
                 "set @gen_uid = concat(%s, sha1(now()));\
-                INSERT INTO `order` (customer_id, amount, uid) VALUES (%s, %s, @gen_uid );\
+                INSERT INTO `order` (customer_id, amount, payment_uid) VALUES (%s, %s, @gen_uid );\
                 ;",
                 [customer_id, customer_id, total],
             )
@@ -597,14 +597,14 @@ class PastOrdersListAPI(APIView):
                 )
             customer_id = customer[0]
             cursor.execute(
-                "SELECT id, uid, amount, order_time FROM `order` WHERE customer_id = %s",
+                "SELECT id, payment_uid, amount, order_time FROM `order` WHERE customer_id = %s",
                 [customer_id],
             )
             orders = cursor.fetchall()
             orders = [
                 {
                     "id": order[0],
-                    "uid": order[1],
+                    "payment_uid": order[1],
                     "amount": order[2],
                     "created_at": order[3].strftime("%d-%m-%Y %H:%M"),
                 }
@@ -640,7 +640,7 @@ class PastOrderDetailAPI(APIView):
                 )
             customer_id = customer[0]
             cursor.execute(
-                "SELECT id, uid, amount, order_time FROM `order` WHERE customer_id = %s AND id = %s",
+                "SELECT id, payment_uid, amount, order_time FROM `order` WHERE customer_id = %s AND id = %s",
                 [customer_id, order_id],
             )
             order = cursor.fetchone()
@@ -652,7 +652,7 @@ class PastOrderDetailAPI(APIView):
                 )
             order = {
                 "id": order[0],
-                "uid": order[1],
+                "payment_uid": order[1],
                 "amount": order[2],
                 "created_at": order[3].strftime("%d-%m-%Y %H:%M"),
             }
