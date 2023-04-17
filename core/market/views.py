@@ -6,6 +6,11 @@ from rest_framework.views import APIView
 from core.exceptions import CustomValidationError
 from core.helpers import check_keys
 from core.permissions import IsAuthenticatedByID
+from core.helpers import get_user_from_request
+import os
+from django.conf import settings
+from PIL import Image
+
 
 """
 The code defines three classes, each subclassing Django REST framework's APIView: ItemListAPI, CategoryListAPI, and ItemRetrieveAPI.
@@ -160,7 +165,7 @@ class ItemRetreiveAPI(APIView):
         with connection.cursor() as cursor:
             cursor.execute(
                 'SELECT item.id, item.name, price, description, total_sale, concat(user.first_name, " ", user.last_name) as seller_name, \
-            store_name, ifnull(avg(rating),0) as rating, item.mrp, (item.mrp-item.price)*100/item.mrp as discount FROM item \
+            store_name, ifnull(avg(rating),0) as rating, item.mrp, (item.mrp-item.price)*100/item.mrp as discount, stock FROM item \
             join user on item.seller_id = user.id\
             left join review on item.id = review.item_id\
             join seller on item.seller_id = seller.user_id\
@@ -180,6 +185,7 @@ class ItemRetreiveAPI(APIView):
             "rating": float(queryset[7]),
             "mrp" : queryset[8],
             'discount' : float(queryset[9]),
+            'quantity' : queryset[10],
         }
 
         with connection.cursor() as cursor:
@@ -214,3 +220,99 @@ class ItemRetreiveAPI(APIView):
             )
         data["reviews"] = reviews
         return JsonResponse(data)
+
+
+class VerifyCouponAPI(APIView):
+
+    def post(self, request):
+        check_keys(request.data, ["coupon_code"])
+        coupon_code = request.data["coupon_code"]
+
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT * FROM coupon_code WHERE code = %s", [coupon_code]
+            )
+            queryset = cursor.fetchone()
+
+        if queryset is None:
+            raise CustomValidationError("Invalid Coupon Code")
+        
+        return Response({"detail" : "Coupon Verified"})
+
+
+class CreateItemAPI(APIView):
+    permission_classes = [IsAuthenticatedByID]
+
+    def post(self, request):
+        check_keys(request.data, ["name", "price", "mrp", "description", "category_id", "images"])
+        name = request.data["name"]
+        price = request.data["price"]
+        mrp = request.data["mrp"]
+        description = request.data["description"]
+        category_id = request.data["category_id"]
+        images = request.data.getlist("images")
+        seller_id = get_user_from_request(request).get('id')
+
+        if not name or not price or not mrp or not description or not category_id or not images:
+            raise CustomValidationError("Invalid Request Parameters")
+        
+        if not name.strip() or not description.strip():
+            raise CustomValidationError("Invalid Request Parameters")
+        
+        if price > mrp:
+            raise CustomValidationError("Price cannot be greater than MRP")
+        
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT * FROM category WHERE id = %s", [category_id]
+            )
+            queryset = cursor.fetchone()
+
+        if queryset is None:
+            raise CustomValidationError("Invalid Category ID")
+        
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT address_id, store_name FROM seller WHERE user_id = %s", [seller_id]
+            )
+            queryset = cursor.fetchone()
+
+        if queryset is None:
+            raise CustomValidationError("Invalid Seller ID")
+        address_id = queryset[0]
+        store_name = queryset[1]
+
+        if not store_name or not store_name.strip():
+            raise CustomValidationError("Store Name cannot be empty")
+        if not address_id:
+            raise CustomValidationError("Seller has no address")
+
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT * FROM item WHERE name = %s and seller_id = %s", [name, seller_id]
+            )
+            queryset = cursor.fetchone()
+
+        if queryset is not None:
+            raise CustomValidationError("Seller's Item already exists")
+
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "set autocommit=0;"
+                "START TRANSACTION;"
+                "INSERT INTO item (name, price, mrp, description, category_id, seller_id) VALUES (%s, %s, %s, %s, %s, %s);",
+                [name, price, mrp, description, category_id, seller_id],
+            )
+            cursor.execute("SELECT LAST_INSERT_ID();")
+            item_id = cursor.fetchone()[0]
+        for image in images:
+            Image.open(image).save(os.path.join(settings.MEDIA_ROOT,"item_images", image.name))
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    "INSERT INTO itemimage (item_id, image) VALUES (%s, %s);"
+                    "COMMIT;"
+                    "set autocommit=1;",
+                    [item_id, "item_image/"+image.name],
+                )
+
+        return Response({"detail": "Item Created"})

@@ -98,7 +98,8 @@ class Register(APIView):
 
             with connection.cursor() as cursor:
                 cursor.execute(
-                    """
+                """
+                set autocommit=0;
                 start transaction;
                 insert into user (first_name, last_name, age, sex, email, password, mobile, date_joined)
                 values (%s, %s, %s, %s, %s, (select sha1(%s)), %s, now());
@@ -106,6 +107,7 @@ class Register(APIView):
                 insert into customer (user_id, total_purchases) values (@user_id, 0);
                 insert into seller (user_id, total_sales) values (@user_id, 0);
                 commit;
+                set autocommit=1;
                 """,
                     [first_name, last_name, age, sex, email, password, mobile],
                 )
@@ -117,7 +119,7 @@ class Register(APIView):
                 else:
                     return Response(
                         {
-                            "message": "Registration Successful!",
+                            "detail": "Registration Successful!",
                             "user_id": user[0],
                         }
                     )
@@ -142,7 +144,7 @@ class Login(APIView):
             if user:
                 return Response(
                     {
-                        "message": "Login Successful",
+                        "detail": "Login Successful",
                         "user_id": user[0],
                     }
                 )
@@ -308,11 +310,7 @@ class UpdateCartAPI(APIView):
 
         if not cart_item:
             if int(data["quantity"]) == 0:
-                return Response(
-                    {
-                        "message": "Item not in cart",
-                    }
-                )
+                raise CustomValidationError("Item not in cart")
             with connection.cursor() as cursor:
                 cursor.execute(
                     "INSERT INTO cart (customer_id, item_id, quantity) VALUES (%s, %s, %s)",
@@ -320,7 +318,7 @@ class UpdateCartAPI(APIView):
                 )
             return Response(
                 {
-                    "message": "Item added to cart",
+                    "detail": "Item added to cart",
                 }
             )
         if int(data["quantity"]) == 0:
@@ -331,7 +329,7 @@ class UpdateCartAPI(APIView):
                 )
             return Response(
                 {
-                    "message": "Item removed from cart",
+                    "detail": "Item removed from cart",
                 }
             )
 
@@ -342,7 +340,7 @@ class UpdateCartAPI(APIView):
             )
         return Response(
             {
-                "message": "Cart updated",
+                "detail": "Cart updated",
             }
         )
 
@@ -391,19 +389,18 @@ class UpdateUserAPI(APIView):
 class UpdateCustomerAPI(APIView):
     permission_classes = (IsAuthenticatedByID,)
 
-    def patch(self, request):
+    def put(self, request):
         user = get_user_from_request(request)
         data = request.data
         check_keys(
-            data, ["address_line1", "address_line2",
-                   "city", "country", "pincode"]
+            data, ["address_line1", "city", "country", "pincode"]
         )
         with connection.cursor() as cursor:
             cursor.execute(
                 "SELECT id FROM address WHERE address_line1 = %s AND address_line2 = %s AND city = %s AND country = %s",
                 [
                     data["address_line1"],
-                    data["address_line2"],
+                    data.get("address_line2", ""),
                     data["city"],
                     data["country"],
                 ],
@@ -411,14 +408,15 @@ class UpdateCustomerAPI(APIView):
             address = cursor.fetchone()
             if not address:
                 cursor.execute(
-                    "INSERT INTO address (address_line1, address_line2, city, country) VALUES (%s, %s, %s, %s) RETURNING id",
+                    "INSERT INTO address (address_line1, address_line2, city, country) VALUES (%s, %s, %s, %s);",
                     [
                         data["address_line1"],
-                        data["address_line2"],
+                        data.get("address_line2", ""),
                         data["city"],
                         data["country"],
                     ],
                 )
+                cursor.execute("select max(id) from address;")
                 address = cursor.fetchone()
             address_id = address[0]
             cursor.execute(
@@ -444,7 +442,7 @@ class UpdateCustomerAPI(APIView):
 class UpdateSellerAPI(APIView):
     permission_classes = (IsAuthenticatedByID,)
 
-    def patch(self, request):
+    def put(self, request):
         user = get_user_from_request(request)
         data = request.data
         check_keys(
@@ -452,7 +450,6 @@ class UpdateSellerAPI(APIView):
             [
                 "store_name",
                 "address_line1",
-                "address_line2",
                 "city",
                 "country",
                 "pincode",
@@ -463,7 +460,7 @@ class UpdateSellerAPI(APIView):
                 "SELECT id FROM address WHERE address_line1 = %s AND address_line2 = %s AND city = %s AND country = %s",
                 [
                     data["address_line1"],
-                    data["address_line2"],
+                    data.get("address_line2", ""),
                     data["city"],
                     data["country"],
                 ],
@@ -471,14 +468,15 @@ class UpdateSellerAPI(APIView):
             address = cursor.fetchone()
             if not address:
                 cursor.execute(
-                    "INSERT INTO address (address_line1, address_line2, city, country) VALUES (%s, %s, %s, %s) RETURNING id",
+                    "INSERT INTO address (address_line1, address_line2, city, country) VALUES (%s, %s, %s, %s);",
                     [
                         data["address_line1"],
-                        data["address_line2"],
+                        data.get("address_line2", ""),
                         data["city"],
                         data["country"],
                     ],
                 )
+                cursor.execute("select max(id) from address;")
                 address = cursor.fetchone()
             address_id = address[0]
             cursor.execute(
@@ -523,28 +521,23 @@ class PlaceOrderAPI(APIView):
         # check_keys(data, ["payment_method"])
         with connection.cursor() as cursor:
             cursor.execute(
-                "SELECT user_id FROM customer WHERE user_id = %s", [
+                "SELECT user_id, address_id FROM customer WHERE user_id = %s", [
                     user.get("id")]
             )
             customer = cursor.fetchone()
             if not customer:
-                return Response(
-                    {
-                        "message": "You are not a customer",
-                    }
-                )
+                raise CustomValidationError("You are not a customer")
             customer_id = customer[0]
+            address_id = customer[1]
+            if not address_id:
+                raise CustomValidationError("Address is required")
             cursor.execute(
                 "SELECT customer_id, customer_id, item_id, quantity FROM cart WHERE customer_id = %s",
                 [customer_id],
             )
             cart_items = cursor.fetchall()
             if not cart_items:
-                return Response(
-                    {
-                        "message": "Your cart is empty",
-                    }
-                )
+                raise CustomValidationError("Cart is empty")
             cursor.execute(
                 "select sum(price*quantity) as total from cart join item on cart.item_id = item.id where customer_id = %s",
                 [customer_id],
@@ -552,9 +545,10 @@ class PlaceOrderAPI(APIView):
             total = cursor.fetchone()[0]
             cursor.execute(
                 "set @gen_uid = concat(%s, sha1(now()));\
-                INSERT INTO `order` (customer_id, amount, payment_uid) VALUES (%s, %s, @gen_uid );\
+                set @address_id = (select address_id from customer where user_id = %s);\
+                INSERT INTO `order` (customer_id, amount, payment_uid, address_id) VALUES (%s, %s, @gen_uid, @address_id);\
                 ;",
-                [customer_id, customer_id, total],
+                [customer_id, customer_id, customer_id, total],
             )
             cursor.execute("SELECT max(id) FROM `order`")
             order_id = cursor.fetchone()[0]
@@ -568,12 +562,14 @@ class PlaceOrderAPI(APIView):
                     "INSERT INTO orderitem (order_id, item_id, quantity, price, from_address_id, to_address_id, status) VALUES\
                     (%s, %s, %s, @price, @from_address_id, @to_address_id, 'ORDER_PLACED');"
                     "DELETE FROM cart WHERE customer_id = %s AND item_id = %s;"
+                    "UPDATE item SET stock = stock - %s WHERE id = %s;"
                     "commit;",
                     [cart_item[2]]
                     + [user.get("id")]
                     + [user.get("id")]
                     + [order_id, cart_item[2], cart_item[3]]
-                    + [customer_id, cart_item[2]],
+                    + [customer_id, cart_item[2]]
+                    + [cart_item[3], cart_item[2]],
                 )
         return Response({"detail": "Order placed"})
 
@@ -590,11 +586,7 @@ class PastOrdersListAPI(APIView):
             )
             customer = cursor.fetchone()
             if not customer:
-                return Response(
-                    {
-                        "message": "You are not a customer",
-                    }
-                )
+                raise CustomValidationError("You are not a customer")
             customer_id = customer[0]
             cursor.execute(
                 "SELECT id, payment_uid, amount, order_time FROM `order` WHERE customer_id = %s",
@@ -621,11 +613,7 @@ class PastOrderDetailAPI(APIView):
         order_id = request.query_params.get("order_id")
         user = get_user_from_request(request)
         if not order_id:
-            return Response(
-                {
-                    "message": "Order id is required",
-                }
-            )
+            raise CustomValidationError("Order id is required")
         with connection.cursor() as cursor:
             cursor.execute(
                 "SELECT user_id FROM customer WHERE user_id = %s", [
@@ -633,28 +621,28 @@ class PastOrderDetailAPI(APIView):
             )
             customer = cursor.fetchone()
             if not customer:
-                return Response(
-                    {
-                        "message": "You are not a customer",
-                    }
-                )
+                raise CustomValidationError("You are not a customer")
             customer_id = customer[0]
             cursor.execute(
-                "SELECT id, payment_uid, amount, order_time FROM `order` WHERE customer_id = %s AND id = %s",
+                "SELECT id, payment_uid, amount, order_time, address_line1, adderss_line2, city, country, pincode FROM `order` " 
+                "left JOIN address on address.id = `order`.address_id "
+                "left JOIN address_pincode on address_pincode.id = address.id "
+                "WHERE customer_id = %s AND id = %s ; ",
                 [customer_id, order_id],
             )
             order = cursor.fetchone()
             if not order:
-                return Response(
-                    {
-                        "message": "Order not found",
-                    }
-                )
+                raise CustomValidationError("Order not found")
             order = {
                 "id": order[0],
                 "payment_uid": order[1],
                 "amount": order[2],
-                "created_at": order[3].strftime("%d-%m-%Y %H:%M"),
+                "order_time": order[3].strftime("%d-%m-%Y %H:%M"),
+                "address_line1": order[4],
+                "address_line2": order[5],
+                "city": order[6],
+                "country": order[7],
+                "pincode": order[8],
             }
             cursor.execute(
                 "SELECT item_id, quantity, price, status FROM orderitem WHERE order_id = %s",
