@@ -14,4 +14,5 @@ urlpatterns = [
     path("place-order/", PlaceOrderAPI.as_view()),
     path("past-orders/", PastOrdersListAPI.as_view()),
     path("past-order-detail/", PastOrderDetailAPI.as_view()),
+    path("create-review/", CreateReviewAPI.as_view()),
 ]

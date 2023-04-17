@@ -9,6 +9,9 @@ from core.permissions import IsAuthenticatedByID
 
 User = get_user_model()
 
+import os
+from django.conf import settings
+from PIL import Image
 
 """
 Register API View
@@ -659,3 +662,77 @@ class PastOrderDetailAPI(APIView):
                 for order_item in order_items
             ]
             return Response({"order": order, "order_items": order_items})
+
+
+class CreateReviewAPI(APIView):
+    permission_classes = (IsAuthenticatedByID,)
+
+    def post(self, request):
+        data = request.data
+        check_keys(data, ["order_id", "rating", "message", "item_id", "title"])
+        user = get_user_from_request(request)
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT user_id FROM customer WHERE user_id = %s", [
+                    user.get("id")]
+            )
+            customer = cursor.fetchone()
+            if not customer:
+                raise CustomValidationError("You are not a customer")
+            
+            cursor.execute(
+                "SELECT id FROM item WHERE id = %s", [
+                    data.get("item_id")]
+            )
+            item = cursor.fetchone()
+            if not item:
+                raise CustomValidationError("Item not found")
+            
+            cursor.execute(
+                "SELECT id FROM `order` WHERE id = %s AND customer_id = %s", [
+                    data.get("order_id"), customer[0]]
+            )
+            
+            order = cursor.fetchone()
+            if not order:
+                raise CustomValidationError("Order not found")
+
+            cursor.execute(
+                "SELECT * FROM orderitem WHERE order_id = %s AND item_id = %s", [
+                    data.get("order_id"), data.get("item_id")]
+            )
+            order_item = cursor.fetchone()
+            if not order_item:
+                raise CustomValidationError("Item not found in order")
+
+            cursor.execute(
+                "SELECT * FROM review WHERE order_id = %s AND item_id = %s", [
+                    data.get("order_id"), data.get("item_id")]
+            )
+            review = cursor.fetchone()
+            if review:
+                raise CustomValidationError("Review already exists")
+
+            cursor.execute(
+                "set autocommit = 0;"
+                "start transaction;"
+                "INSERT INTO review (order_id, item_id, rating, message, title) VALUES (%s, %s, %s, %s, %s) ;",
+                [data.get('order_id'), data.get("item_id"), data.get("rating"), data.get("message"), data.get("title")],
+            )
+            image = data.getlist("image")
+            if len(image)>1:
+                raise CustomValidationError("Only one image allowed")
+            if image and image != [''] and len(image)==1:
+                cursor.execute(
+                    "UPDATE review set image = %s where order_id = %s and item_id = %s;",
+                    ['review_images/'+image[0].name, data.get('order_id'), data.get("item_id")],
+                )
+                img = Image.open(image[0])
+                if img.mode != 'RGB':
+                    img = img.convert('RGB')
+                img.save(os.path.join(settings.MEDIA_ROOT,"review_images", image[0].name))
+            cursor.execute(
+                "commit;"
+                "set autocommit = 1;"
+            )
+        return Response({"detail": "Review Added"})
