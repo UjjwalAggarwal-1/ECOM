@@ -430,7 +430,7 @@ class UpdateCustomerAPI(APIView):
                     [address_id, data["pincode"]],
                 )
             cursor.execute(
-                "SELECT id FROM customer WHERE user_id = %s", [user.get("id")]
+                "SELECT user_id FROM customer WHERE user_id = %s", [user.get("id")]
             )
             cursor.execute(
                 "UPDATE customer SET address_id = %s WHERE user_id = %s",
