@@ -627,7 +627,7 @@ class PastOrderDetailAPI(APIView):
                 "SELECT id, payment_uid, amount, order_time, address_line1, adderss_line2, city, country, pincode FROM `order` " 
                 "left JOIN address on address.id = `order`.address_id "
                 "left JOIN address_pincode on address_pincode.id = address.id "
-                "WHERE customer_id = %s AND id = %s ; ",
+                "WHERE customer_id = %s AND `order`.id = %s ; ",
                 [customer_id, order_id],
             )
             order = cursor.fetchone()
