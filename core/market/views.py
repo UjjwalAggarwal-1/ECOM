@@ -88,9 +88,9 @@ class ItemListAPI(APIView):
                     "name": item[1],
                     "price": item[2],
                     "seller_name": item[3],
-                    "rating": item[4],
+                    "rating": float(item[4]),
                     "mrp" : item[5],
-                    "discount": item[6],
+                    "discount": float(item[6]),
                 }
             )
         return data
@@ -151,9 +151,9 @@ class ItemRetreiveAPI(APIView):
             "total_sale": queryset[4],
             "seller_name": queryset[5],
             "store_name": queryset[6],
-            "rating": queryset[7],
+            "rating": float(queryset[7]),
             "mrp" : queryset[8],
-            'discount' : queryset[9],
+            'discount' : float(queryset[9]),
         }
 
         with connection.cursor() as cursor:
@@ -181,7 +181,7 @@ class ItemRetreiveAPI(APIView):
                 {
                     "reviewer_name": review[0],
                     "description": review[1],
-                    "rating": review[2],
+                    "rating": float(review[2]),
                     "image": review[3],
                     "title": review[4],
                 }
