@@ -25,7 +25,7 @@ class ItemListAPI(APIView):
         with connection.cursor() as cursor:
             cursor.execute(
                 'SELECT item.id, item.name, item.price, concat(user.first_name, " ", user.last_name) as seller_name, \
-            avg(rating) as rating FROM item \
+            avg(rating) as rating,item.mrp, (item.mrp-item.price)/100 as discount FROM item \
             join user on item.seller_id = user.id\
             left join review on item.id = review.item_id\
             group by item.id\
@@ -41,7 +41,7 @@ class ItemListAPI(APIView):
             with connection.cursor() as cursor:
                 cursor.execute(
                     'SELECT item.id, item.name, price, concat(user.first_name, " ", user.last_name) as seller_name, \
-                    avg(rating) as rating FROM item \
+                    avg(rating) as rating, item.mrp, (item.mrp-item.price)/100 as discount FROM item \
                     INNER JOIN `category` ON (`item`.`category_id` = `category`.`id`)\
                     join user on item.seller_id = user.id\
                     left join review on item.id = review.item_id\
@@ -55,7 +55,7 @@ class ItemListAPI(APIView):
             with connection.cursor() as cursor:
                 cursor.execute(
                     "SELECT item.id, item.name, price, concat(user.first_name, ' ', user.last_name) as seller_name, \
-                avg(rating) as rating FROM item \
+                avg(rating) as rating, item.mrp, (item.mrp-item.price)/100 as discount FROM item \
                 INNER JOIN `category` ON (`item`.`category_id` = `category`.`id`) \
                 join user on item.seller_id = user.id\
                 left join review on item.id = review.item_id\
@@ -70,7 +70,7 @@ class ItemListAPI(APIView):
             with connection.cursor() as cursor:
                 cursor.execute(
                     'SELECT item.id, item.name, item.price, concat(user.first_name, " ", user.last_name) as seller_name, \
-                avg(rating) as rating FROM item \
+                avg(rating) as rating, item.mrp, (item.mrp-item.price)/100 as discount FROM item \
                 join user on item.seller_id = user.id\
                 left join review on item.id = review.item_id\
                 group by item.id\
@@ -89,13 +89,15 @@ class ItemListAPI(APIView):
                     "price": item[2],
                     "seller_name": item[3],
                     "rating": item[4],
+                    "mrp" : item[5],
+                    "discount": item[6],
                 }
             )
         return data
 
     def get(self, request):
         data = self.get_data()
-        return JsonResponse({"data": data})
+        return JsonResponse({data})
 
 
 class CategoryListAPI(APIView):
@@ -132,7 +134,7 @@ class ItemRetreiveAPI(APIView):
         with connection.cursor() as cursor:
             cursor.execute(
                 'SELECT item.id, item.name, price, description, total_sale, concat(user.first_name, " ", user.last_name) as seller_name, \
-            store_name, avg(rating) as rating FROM item \
+            store_name, avg(rating) as rating, item.mrp, (item.mrp-item.price)/100 as discount FROM item \
             join user on item.seller_id = user.id\
             left join review on item.id = review.item_id\
             join seller on item.seller_id = seller.user_id\
@@ -150,6 +152,8 @@ class ItemRetreiveAPI(APIView):
             "seller_name": queryset[5],
             "store_name": queryset[6],
             "rating": queryset[7],
+            "mrp" : queryset[8],
+            'discount' : queryset[9],
         }
 
         with connection.cursor() as cursor:
@@ -183,4 +187,4 @@ class ItemRetreiveAPI(APIView):
                 }
             )
         data["reviews"] = reviews
-        return JsonResponse({"data": data})
+        return JsonResponse({data})
