@@ -42,10 +42,8 @@ class ItemListAPI(APIView):
                 "left join review on item.id = review.item_id "
                 "join seller on item.seller_id = seller.user_id "
                 "join itemimage on itemimage.item_id = item.id "
-            "WHERE "
-                "item.id = 1"
                 "limit 1"
-                ";"
+                ";",
             )
             queryset = cursor.fetchall()
 
