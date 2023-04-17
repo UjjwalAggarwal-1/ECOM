@@ -251,6 +251,15 @@ class CreateItemAPI(APIView):
         description = request.data["description"]
         category_id = request.data["category_id"]
         images = request.data.getlist("images")
+        if not isinstance(images, list):
+            raise CustomValidationError("Invalid Request Parameters")
+        if len( images ) == 0:
+            raise CustomValidationError("Invalid Request Parameters")
+        if len( images ) > 5:
+            raise CustomValidationError("Images cannot be more than 5")
+        if any(isinstance(image, str) for image in images):
+            raise CustomValidationError("Invalid Request Parameters")
+        
         seller_id = get_user_from_request(request).get('id')
 
         if not name or not price or not mrp or not description or not category_id or not images:
@@ -306,7 +315,10 @@ class CreateItemAPI(APIView):
             cursor.execute("SELECT LAST_INSERT_ID();")
             item_id = cursor.fetchone()[0]
         for image in images:
-            Image.open(image).save(os.path.join(settings.MEDIA_ROOT,"item_images", image.name))
+            img = Image.open(image)
+            if img.mode != 'RGB':
+                img = img.convert('RGB')
+            img.save(os.path.join(settings.MEDIA_ROOT,"item_images", image.name))
             with connection.cursor() as cursor:
                 cursor.execute(
                     "INSERT INTO itemimage (item_id, image) VALUES (%s, %s);"
