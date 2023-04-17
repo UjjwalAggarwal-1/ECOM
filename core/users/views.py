@@ -280,7 +280,7 @@ class ViewCartAPI(APIView):
                 for item in cart_items
             ]
 
-        return Response(cart_items)
+        return Response(cart_items, safe=False)
 
 
 class UpdateCartAPI(APIView):
