@@ -196,7 +196,7 @@ class ProfileDetailAPI(APIView):
                 }
 
         return Response(
-            {"data": {"user": user, "seller": seller_data, "customer": customer_data}}
+            {"user": user, "seller": seller_data, "customer": customer_data}
         )
 
 
@@ -611,7 +611,7 @@ class PastOrdersListAPI(APIView):
                 for order in orders
             ]
 
-            return Response({"data": orders})
+            return Response(orders)
 
 
 class PastOrderDetailAPI(APIView):
@@ -670,4 +670,4 @@ class PastOrderDetailAPI(APIView):
                 }
                 for order_item in order_items
             ]
-            return Response({"data": order, "order_items": order_items})
+            return Response({"order": order, "order_items": order_items})
