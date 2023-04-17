@@ -566,13 +566,21 @@ class PlaceOrderAPI(APIView):
                     (%s, %s, %s, @price, @from_address_id, @to_address_id, 'ORDER_PLACED');"
                     "DELETE FROM cart WHERE customer_id = %s AND item_id = %s;"
                     "UPDATE item SET stock = stock - %s WHERE id = %s;"
+                    "set @seller_id = (select seller_id from item where item_id = %s);"
+                    "UPDATE seller SET total_sales = total_sales+%s where user_id = @seller_id;"
+                    "UPDATE customer SET total_purchases = total_purchases+%s where user_id = %s;"
+                    "UPdate item SET total_sale = total_sale+%s where id = %s;"
                     "commit;",
                     [cart_item[2]]
                     + [user.get("id")]
                     + [user.get("id")]
                     + [order_id, cart_item[2], cart_item[3]]
                     + [customer_id, cart_item[2]]
-                    + [cart_item[3], cart_item[2]],
+                    + [cart_item[3], cart_item[2]]
+                    + [cart_item[2]] # item_id
+                    + [cart_item[3]] # quantity
+                    + [cart_item[3], user.get("id")]
+                    + [cart_item[3], cart_item[2]]
                 )
         return Response({"detail": "Order placed"})
 
