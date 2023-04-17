@@ -163,7 +163,7 @@ class ItemRetreiveAPI(APIView):
             )
             queryset = cursor.fetchall()
 
-        data["images"] = queryset[0].split(",") if queryset[0] else []
+        data["images"] = queryset[0][0].split(",") if queryset[0] else []
 
         with connection.cursor() as cursor:
             cursor.execute(
