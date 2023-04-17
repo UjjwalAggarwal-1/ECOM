@@ -3,13 +3,15 @@ from .views import *
 
 
 urlpatterns = [
-    path("register/", Register.as_view(), name="register"),
-    path("login/", Login.as_view(), name="login"),
-    path("profile/", ProfileDetailAPI.as_view(), name="profile"),
-    path('view-cart/', ViewCartAPI.as_view(), name='view-cart'),
-    path('update-cart/', UpdateCartAPI.as_view(), name='update-cart'),
-    path('update-user/', UpdateUserAPI.as_view(), name='update-user'),
-    path('update-customer/', UpdateCustomerAPI.as_view(), name='update-customer'),
-    path('update-seller/', UpdateSellerAPI.as_view(), name='update-seller'),
-    path('place-order/', PlaceOrderAPI.as_view(), name='place-order'),
+    path("register/", Register.as_view()),
+    path("login/", Login.as_view()),
+    path("profile/", ProfileDetailAPI.as_view()),
+    path('view-cart/', ViewCartAPI.as_view()),
+    path('update-cart/', UpdateCartAPI.as_view()),
+    path('update-user/', UpdateUserAPI.as_view()),
+    path('update-customer/', UpdateCustomerAPI.as_view()),
+    path('update-seller/', UpdateSellerAPI.as_view()),
+    path('place-order/', PlaceOrderAPI.as_view()),
+    path('past-orders/', PastOrdersListAPI.as_view()),
+    path('past-order-detail/', PastOrderDetailAPI.as_view()),
 ]

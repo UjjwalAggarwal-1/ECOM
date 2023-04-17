@@ -421,3 +421,99 @@ class PlaceOrderAPI(APIView):
                     [customer_id, cart_item[2]]
                     )
         return Response({'detail':"Order placed"})
+    
+
+class PastOrdersListAPI(APIView):
+    permission_classes = (IsAuthenticatedByID,)
+
+    def get(self, request):
+
+        user = get_user_from_request(request)
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT user_id FROM customer WHERE user_id = %s", 
+                [user.get('id')]
+            )
+            customer = cursor.fetchone()
+            if not customer:
+                return Response(
+                    {
+                        "message": "You are not a customer",
+                    }
+                )
+            customer_id = customer[0]
+            cursor.execute(
+                "SELECT id, uid, amount, order_time FROM `order` WHERE customer_id = %s", 
+                [customer_id]
+            )
+            orders = cursor.fetchall()
+            orders = [
+                {
+                    "id": order[0],
+                    "uid": order[1],
+                    "amount": order[2],
+                    "created_at": order[3].strftime("%d-%m-%Y %H:%M"),
+                }
+                for order in orders
+            ]
+            
+            return Response({'data':orders})
+        
+
+class PastOrderDetailAPI(APIView):
+    permission_classes = (IsAuthenticatedByID,)
+
+    def get(self, request):
+        order_id = request.query_params.get('order_id')
+        user = get_user_from_request(request)
+        if not order_id:
+            return Response(
+                {
+                    "message": "Order id is required",
+                }
+            )
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT user_id FROM customer WHERE user_id = %s", 
+                [user.get('id')]
+            )
+            customer = cursor.fetchone()
+            if not customer:
+                return Response(
+                    {
+                        "message": "You are not a customer",
+                    }
+                )
+            customer_id = customer[0]
+            cursor.execute(
+                "SELECT id, uid, amount, order_time FROM `order` WHERE customer_id = %s AND id = %s", 
+                [customer_id, order_id]
+            )
+            order = cursor.fetchone()
+            if not order:
+                return Response(
+                    {
+                        "message": "Order not found",
+                    }
+                )
+            order = {
+                "id": order[0],
+                "uid": order[1],
+                "amount": order[2],
+                "created_at": order[3].strftime("%d-%m-%Y %H:%M"),
+            }
+            cursor.execute(
+                "SELECT item_id, quantity, price, status FROM orderitem WHERE order_id = %s", 
+                [order_id]
+            )
+            order_items = cursor.fetchall()
+            order_items = [
+                {
+                    "item_id": order_item[0],
+                    "quantity": order_item[1],
+                    "price": order_item[2],
+                    "status": order_item[3],
+                }
+                for order_item in order_items
+            ]
+            return Response({'data':order, 'order_items':order_items})
