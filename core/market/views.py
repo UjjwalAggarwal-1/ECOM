@@ -25,7 +25,7 @@ class ItemListAPI(APIView):
         with connection.cursor() as cursor:
             cursor.execute(
                 'SELECT item.id, item.name, item.price, concat(user.first_name, " ", user.last_name) as seller_name, \
-            avg(rating) as rating,item.mrp, (item.mrp-item.price)*100/item.mrp as discount FROM item \
+            ifnull(avg(rating),0) as rating,item.mrp, (item.mrp-item.price)*100/item.mrp as discount FROM item \
             join user on item.seller_id = user.id\
             left join review on item.id = review.item_id\
             group by item.id\
@@ -41,7 +41,7 @@ class ItemListAPI(APIView):
             with connection.cursor() as cursor:
                 cursor.execute(
                     'SELECT item.id, item.name, price, concat(user.first_name, " ", user.last_name) as seller_name, \
-                    avg(rating) as rating, item.mrp, (item.mrp-item.price)*100/item.mrp as discount FROM item \
+                    ifnull(avg(rating),0) as rating, item.mrp, (item.mrp-item.price)*100/item.mrp as discount FROM item \
                     INNER JOIN `category` ON (`item`.`category_id` = `category`.`id`)\
                     join user on item.seller_id = user.id\
                     left join review on item.id = review.item_id\
@@ -55,7 +55,7 @@ class ItemListAPI(APIView):
             with connection.cursor() as cursor:
                 cursor.execute(
                     "SELECT item.id, item.name, price, concat(user.first_name, ' ', user.last_name) as seller_name, \
-                avg(rating) as rating, item.mrp, (item.mrp-item.price)*100/item.mrp as discount FROM item \
+                ifnull(avg(rating),0) as rating, item.mrp, (item.mrp-item.price)*100/item.mrp as discount FROM item \
                 INNER JOIN `category` ON (`item`.`category_id` = `category`.`id`) \
                 join user on item.seller_id = user.id\
                 left join review on item.id = review.item_id\
@@ -70,7 +70,7 @@ class ItemListAPI(APIView):
             with connection.cursor() as cursor:
                 cursor.execute(
                     'SELECT item.id, item.name, item.price, concat(user.first_name, " ", user.last_name) as seller_name, \
-                avg(rating) as rating, item.mrp, (item.mrp-item.price)*100/item.mrp as discount FROM item \
+                ifnull(avg(rating),0) as rating, item.mrp, (item.mrp-item.price)*100/item.mrp as discount FROM item \
                 join user on item.seller_id = user.id\
                 left join review on item.id = review.item_id\
                 group by item.id\
@@ -134,7 +134,7 @@ class ItemRetreiveAPI(APIView):
         with connection.cursor() as cursor:
             cursor.execute(
                 'SELECT item.id, item.name, price, description, total_sale, concat(user.first_name, " ", user.last_name) as seller_name, \
-            store_name, avg(rating) as rating, item.mrp, (item.mrp-item.price)*100/item.mrp as discount FROM item \
+            store_name, ifnull(avg(rating),0) as rating, item.mrp, (item.mrp-item.price)*100/item.mrp as discount FROM item \
             join user on item.seller_id = user.id\
             left join review on item.id = review.item_id\
             join seller on item.seller_id = seller.user_id\
