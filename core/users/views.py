@@ -280,7 +280,7 @@ class ViewCartAPI(APIView):
                 for item in cart_items
             ]
 
-        return Response({"data": {"cart_items": cart_items}})
+        return Response(cart_items)
 
 
 class UpdateCartAPI(APIView):

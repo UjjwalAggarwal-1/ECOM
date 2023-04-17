@@ -97,7 +97,7 @@ class ItemListAPI(APIView):
 
     def get(self, request):
         data = self.get_data()
-        return JsonResponse({data})
+        return JsonResponse(data)
 
 
 class CategoryListAPI(APIView):
@@ -187,4 +187,4 @@ class ItemRetreiveAPI(APIView):
                 }
             )
         data["reviews"] = reviews
-        return JsonResponse({data})
+        return JsonResponse(data)
