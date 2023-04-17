@@ -120,7 +120,7 @@ class CategoryListAPI(APIView):
 
     def get(self, request):
         data = self.get_data()
-        return JsonResponse({"data": data})
+        return JsonResponse(data)
 
 
 class ItemRetreiveAPI(APIView):
