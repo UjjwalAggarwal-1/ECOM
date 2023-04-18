@@ -240,7 +240,7 @@ class VerifyCouponAPI(APIView):
                 raise CustomValidationError("Invalid Coupon Code")
         
             discount = queryset[0]
-        return Response({"detail" : discount})
+        return Response({"detail" : discount*100})
 
 
 class CreateItemAPI(APIView):
