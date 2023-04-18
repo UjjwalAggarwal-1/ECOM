@@ -277,7 +277,7 @@ class ViewCartAPI(APIView):
                 "SELECT item.id, item.description, cart.quantity, item.price, item.name, itemimage.image FROM cart\
                 join item on cart.item_id = item.id \
                 join itemimage on item.id = itemimage.item_id \
-                WHERE customer_id = %s limit 1",
+                WHERE customer_id = %s limit 1;",
                 [user.get("id")],
             )
             cart_items = cursor.fetchall()
