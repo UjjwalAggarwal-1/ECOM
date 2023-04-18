@@ -563,7 +563,7 @@ class PlaceOrderAPI(APIView):
                 "set @gen_uid = concat(%s, sha1(now()));\
                 set @address_id = (select address_id from customer where user_id = %s); "
                 "INSERT INTO `order` (customer_id, amount, payment_uid, address_id, order_time) VALUES (%s, %s, @gen_uid, @address_id, "+
-                (timezone.now().strftime("%d-%m-%Y %H:%M:%S"))
+                (timezone.now().strftime("%Y-%m-%d %H:%M:%S"))
                 + " ); ",
                 [customer_id, customer_id, customer_id, total],
             )
