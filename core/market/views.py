@@ -230,7 +230,8 @@ class VerifyCouponAPI(APIView):
 
         with connection.cursor() as cursor:
             cursor.execute(
-                "SELECT discount FROM coupon_code WHERE code = %s and valid_to >= (select now()+interval 5 hour+interval 30 minute) "
+                "SELECT discount FROM coupon_code WHERE code = %s and valid from \
+                <= (select now()+interval 5 hour+interval 30 minute) and valid_to >= (select now()+interval 5 hour+interval 30 minute) "# because server is in UTC, so we have to add 5:30 hours
                 " and used_count < usage_limit;",
                 [coupon_code]
             )

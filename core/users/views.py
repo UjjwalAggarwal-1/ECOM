@@ -592,7 +592,7 @@ class PlaceOrderAPI(APIView):
             )
             if coupon_code:
                 cursor.execute(
-                " SELECT discount FROM coupon_code WHERE code = %s and valid_to >= (select now()+interval 5 hour+interval 30 minute) "# because server is not in IST
+                " SELECT discount FROM coupon_code WHERE code = %s and valid_from <= (select now()+interval 5 hour+interval 30 minute) and valid_to >= (select now()+interval 5 hour+interval 30 minute) "# because server is not in IST
                 " and used_count < usage_limit;",
                 [coupon_code]
                 )
@@ -641,9 +641,8 @@ class PlaceOrderAPI(APIView):
                 )
             if coupon:
                 cursor.execute(
-                    "UPDATE `order` SET discount = %s WHERE id = %s;"
-                    "UPDATE coupon_code SET used_count = used_count + 1 WHERE code = %s;"
-                    [discount, order_id, coupon_code]
+                    "UPDATE coupon_code SET used_count = used_count + 1 WHERE code = %s;",
+                    [ coupon_code]
                 )
             cursor.execute(
                 "commit;"
