@@ -337,7 +337,7 @@ class CreateItemAPI(APIView):
                     "INSERT INTO itemimage (item_id, image) VALUES (%s, %s);"
                     "COMMIT;"
                     "set autocommit=1;",
-                    [item_id, "item_image/"+image.name],
+                    [item_id, "item_images/"+image.name],
                 )
 
         return Response({"detail": "Item Created"})
@@ -470,7 +470,7 @@ class UpdateItemAPI(APIView):
                     "INSERT INTO itemimage (item_id, image) VALUES (%s, %s);"
                     "COMMIT;"
                     "set autocommit=1;",
-                    [item_id,item_id, "item_image/"+image.name],
+                    [item_id,item_id, "item_images/"+image.name],
                 )
             
         return Response({"detail": "Item Updated"})
