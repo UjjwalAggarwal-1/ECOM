@@ -195,9 +195,15 @@ class ProfileDetailAPI(APIView):
                     "store_country": seller[5],
                     "store_pincode": seller[6],
                 }
+            
+            cursor.execute(
+                "SELECT ifnull(sum(quantity),0) FROM cart WHERE user_id = %s;",
+                [user.get("id")]
+            )
+            cart_count = cursor.fetchone()[0]
 
         return Response(
-            {**user, **seller_data, **customer_data}
+            {**user, **seller_data, **customer_data, "cart_count": cart_count}
         )
 
 
