@@ -169,11 +169,11 @@ class ProfileDetailAPI(APIView):
             if customer:
                 customer_data = {
                     "total_purchases": customer[0],
-                    "address_line1": customer[1],
-                    "address_line2": customer[2],
-                    "city": customer[3],
-                    "country": customer[4],
-                    "pincode": customer[5],
+                    "delivery_address1": customer[1],
+                    "delivery_address2": customer[2],
+                    "delivery_city": customer[3],
+                    "delivery_country": customer[4],
+                    "delivery_pincode": customer[5],
                 }
 
             cursor.execute(
@@ -189,15 +189,15 @@ class ProfileDetailAPI(APIView):
                 seller_data = {
                     "total_sales": seller[0],
                     "store_name": seller[1],
-                    "address_line1": seller[2],
-                    "address_line2": seller[3],
-                    "city": seller[4],
-                    "country": seller[5],
-                    "pincode": seller[6],
+                    "store_address1": seller[2],
+                    "store_address2": seller[3],
+                    "store_city": seller[4],
+                    "store_country": seller[5],
+                    "store_pincode": seller[6],
                 }
 
         return Response(
-            {"user": user, "seller": seller_data, "customer": customer_data}
+            {**user, **seller_data, **customer_data}
         )
 
 
