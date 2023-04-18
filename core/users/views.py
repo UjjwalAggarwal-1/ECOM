@@ -590,7 +590,8 @@ class PlaceOrderAPI(APIView):
                     raise CustomValidationError("Invalid coupon code")
                 discount = coupon[0] if coupon else 0
                 total = total - (total * discount / 100)
-            
+            else:
+                coupon = None
             cursor.execute(
                 "set @address_id = (select address_id from customer where user_id = %s); "
                 "INSERT INTO `order` (customer_id, amount, address_id, order_time, payment_uid) VALUES (%s, %s, @address_id, '"+
