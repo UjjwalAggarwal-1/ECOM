@@ -130,7 +130,7 @@ class CategoryListAPI(APIView):
                 "SELECT category.id, category.name, image "
                 "FROM category "
                 "JOIN "
-                "item on item.category_id = category_id "
+                "item on item.category_id = category.id "
                 "GROUP BY "
                 "category.id "
                 "ORDER BY "
@@ -354,7 +354,7 @@ class GetSellerItemsAPI(APIView):
                 "total_sale, ii.image FROM item "
                 "LEFT JOIN review as r on r.item_id = item.id "
                 "LEFT JOIN itemimage as ii ON ii.item_id = item.id "
-                "WHERE item.seller_id = %s GROUP BY r.item_id  order by rating desc;",
+                "WHERE item.seller_id = %s GROUP BY item.id order by rating desc;",
                 [seller_id]
             )
             queryset = cursor.fetchall()
