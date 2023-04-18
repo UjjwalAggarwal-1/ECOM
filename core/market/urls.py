@@ -7,4 +7,6 @@ urlpatterns = [
     path("item/", ItemRetreiveAPI.as_view()),
     path("verify-coupon/", VerifyCouponAPI.as_view()),
     path("create-item/", CreateItemAPI.as_view()),
+    path("update-item/", UpdateItemAPI.as_view()),
+    path("get-seller-items/", GetSellerItemsAPI.as_view()),
 ]

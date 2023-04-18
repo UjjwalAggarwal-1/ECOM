@@ -341,3 +341,104 @@ class CreateItemAPI(APIView):
                 )
 
         return Response({"detail": "Item Created"})
+    
+
+class GetSellerItemsAPI(APIView):
+    permission_classes = [IsAuthenticatedByID]
+
+    def get(self, request):
+        seller_id = get_user_from_request(request).get('id')
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT item.id, item.name, price, mrp, description, category_id, ifnull(avg(r.rating),0), "
+                "total_sale, ii.image FROM item "
+                "LEFT JOIN review as r on r.item_id = item.id "
+                "LEFT JOIN itemimage as ii ON ii.item_id = item.id "
+                "WHERE item.seller_id = %s GROUP BY r.item_id ;",
+                [seller_id]
+            )
+            queryset = cursor.fetchall()
+        items = []
+        for item in queryset:
+            items.append(
+                {
+                    "id": item[0],
+                    "name": item[1],
+                    "price": item[2],
+                    "mrp": item[3],
+                    "description": item[4],
+                    "category_id": item[5],
+                    "rating": float(item[6]),
+                    "total_sale": item[7],
+                    "image": item[8],
+                }
+            )
+        return Response({"items": items})
+    
+
+class UpdateItemAPI(APIView):
+    permission_classes = [IsAuthenticatedByID]
+
+    def post(self, request):
+        check_keys(request.data, ["item_id", "name", "price", "mrp", "description", "category_id", "images"])
+        item_id = request.data["item_id"]
+        name = request.data["name"]
+        price = request.data["price"]
+        mrp = request.data["mrp"]
+        description = request.data["description"]
+        category_id = request.data["category_id"]
+        images = request.data.getlist("images")
+        if not isinstance(images, list):
+            raise CustomValidationError("Invalid Request Parameters")
+        if len( images ) == 0:
+            raise CustomValidationError("Invalid Request Parameters")
+        if len( images ) > 5:
+            raise CustomValidationError("Images cannot be more than 5")
+        if any(isinstance(image, str) for image in images):
+            raise CustomValidationError("Invalid Request Parameters")
+        
+        seller_id = get_user_from_request(request).get('id')
+
+        if not name or not price or not mrp or not description or not category_id or not images:
+            raise CustomValidationError("Invalid Request Parameters")
+        
+        if not name.strip() or not description.strip():
+            raise CustomValidationError("Invalid Request Parameters")
+        try:
+            price = int(price)
+            mrp = int(mrp)
+        except:
+            raise CustomValidationError("Invalid Request Parameters")
+        
+        if price > mrp:
+            raise CustomValidationError("Price cannot be greater than MRP")
+        
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT * FROM category WHERE id = %s", [category_id]
+            )
+            queryset = cursor.fetchone()
+
+        if queryset is None:
+            raise CustomValidationError("Invalid Category ID")
+        
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT address_id, store_name FROM seller WHERE user_id = %s", [seller_id]
+            )
+            queryset = cursor.fetchone()
+
+        if queryset is None:
+            raise CustomValidationError("Invalid Seller ID")
+        address_id = queryset[0]
+        store_name = queryset[1]
+
+        if not store_name or not store_name.strip():
+            raise CustomValidationError("Store Name cannot be empty")
+        if not address_id:
+            raise CustomValidationError("Seller has no address")
+
+        # with connection.cursor() as cursor:
+        #     cursor.execute(
+        #         "SELECT * FROM item WHERE id = %s and seller_id = %
+                
