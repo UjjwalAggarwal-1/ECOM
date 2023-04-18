@@ -351,7 +351,7 @@ class GetSellerItemsAPI(APIView):
         with connection.cursor() as cursor:
             cursor.execute(
                 "SELECT item.id, item.name, price, mrp, description, category_id, ifnull(avg(r.rating),0) as rating, "
-                "total_sale, ii.image FROM item "
+                "total_sale, group_concat(ii.image) FROM item "
                 "LEFT JOIN review as r on r.item_id = item.id "
                 "LEFT JOIN itemimage as ii ON ii.item_id = item.id "
                 "WHERE item.seller_id = %s GROUP BY item.id order by rating desc;",
@@ -370,7 +370,7 @@ class GetSellerItemsAPI(APIView):
                     "category_id": item[5],
                     "rating": float(item[6]),
                     "total_sale": item[7],
-                    "image": item[8],
+                    "image": item[8][0].split(",") if item[8][0] else [],
                 }
             )
         return Response(items)
