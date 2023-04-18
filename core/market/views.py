@@ -350,11 +350,11 @@ class GetSellerItemsAPI(APIView):
         seller_id = get_user_from_request(request).get('id')
         with connection.cursor() as cursor:
             cursor.execute(
-                "SELECT item.id, item.name, price, mrp, description, category_id, ifnull(avg(r.rating),0), "
+                "SELECT item.id, item.name, price, mrp, description, category_id, ifnull(avg(r.rating),0) as rating, "
                 "total_sale, ii.image FROM item "
                 "LEFT JOIN review as r on r.item_id = item.id "
                 "LEFT JOIN itemimage as ii ON ii.item_id = item.id "
-                "WHERE item.seller_id = %s GROUP BY r.item_id ;",
+                "WHERE item.seller_id = %s GROUP BY r.item_id  order by rating desc;",
                 [seller_id]
             )
             queryset = cursor.fetchall()
