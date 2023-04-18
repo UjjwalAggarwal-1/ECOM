@@ -12,6 +12,7 @@ User = get_user_model()
 import os
 from django.conf import settings
 from PIL import Image
+from django.utils import timezone
 
 """
 Register API View
@@ -197,7 +198,7 @@ class ProfileDetailAPI(APIView):
                 }
             
             cursor.execute(
-                "SELECT ifnull(sum(quantity),0) FROM cart WHERE user_id = %s;",
+                "SELECT ifnull(sum(quantity),0) FROM cart WHERE customer_id = %s;",
                 [user.get("id")]
             )
             cart_count = cursor.fetchone()[0]
@@ -560,9 +561,8 @@ class PlaceOrderAPI(APIView):
                 "set autocommit = 0;"
                 "start transaction;"
                 "set @gen_uid = concat(%s, sha1(now()));\
-                set @address_id = (select address_id from customer where user_id = %s);\
-                INSERT INTO `order` (customer_id, amount, payment_uid, address_id) VALUES (%s, %s, @gen_uid, @address_id);\
-                ;",
+                set @address_id = (select address_id from customer where user_id = %s); "
+                "INSERT INTO `order` (customer_id, amount, payment_uid, address_id, order_time) VALUES (%s, %s, @gen_uid, @address_id, "+ str(timezone.now())+ " ); ",
                 [customer_id, customer_id, customer_id, total],
             )
             cursor.execute("SELECT max(id) FROM `order`;")
