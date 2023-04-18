@@ -324,6 +324,8 @@ class CreateItemAPI(APIView):
             item_id = cursor.fetchone()[0]
         for image in images:
             img = Image.open(image)
+            if img.size[0] > 500 or img.size[1] > 500:
+                img.thumbnail((500, 500))
             if img.mode != 'RGB':
                 img = img.convert('RGB')
             img.save(os.path.join(settings.MEDIA_ROOT,"item_images", image.name))
