@@ -13,15 +13,8 @@ from PIL import Image
 
 
 """
-The code defines three classes, each subclassing Django REST framework's APIView: ItemListAPI, CategoryListAPI, and ItemRetrieveAPI.
-
 The ItemListAPI is responsible for fetching a list of items from the database based on optional query parameters passed with the request (category, search, and trending). The fetched data is then transformed into a JSON format and returned as a HTTP response.
-
-The CategoryListAPI class retrieves a list of categories from the database and returns it as a JSON formatted response.
-
-The ItemRetrieveAPI retrieves detailed information about a single item identified by the id parameter. If no id parameter is provided, a CustomValidationError is raised. The fetched data is transformed and returned as a JSON response. Additionally, the method also retrieves any reviews associated with the item by joining with the order and user tables.
 """
-
 
 class ItemListAPI(APIView):
     permission_classes = []
@@ -120,6 +113,9 @@ class ItemListAPI(APIView):
         data = self.get_data()
         return JsonResponse(data, safe=False)
 
+"""
+The CategoryListAPI class retrieves a list of categories from the database and returns it as a JSON formatted response.
+"""
 
 class CategoryListAPI(APIView):
     permission_classes = []
@@ -153,6 +149,10 @@ class CategoryListAPI(APIView):
         data = self.get_data()
         return JsonResponse(data, safe=False)
 
+
+"""
+The ItemRetrieveAPI retrieves detailed information about a single item identified by the id parameter. If no id parameter is provided, a CustomValidationError is raised. The fetched data is transformed and returned as a JSON response. Additionally, the method also retrieves any reviews associated with the item by joining with the order and user tables.
+"""
 
 class ItemRetreiveAPI(APIView):
     permission_classes = []
@@ -243,6 +243,13 @@ class VerifyCouponAPI(APIView):
             discount = queryset[0]
         return Response({"detail" : discount*100})
 
+
+"""
+Create Item API
+pass in : "name", "price", "mrp", "description", "category_id", "images"
+and 'userId' in query params
+creates item for the seller
+"""
 
 class CreateItemAPI(APIView):
     permission_classes = [IsAuthenticatedByID]
@@ -342,6 +349,12 @@ class CreateItemAPI(APIView):
 
         return Response({"detail": "Item Created"})
     
+
+"""
+Get Seller Items API
+pass in : 'userId' in query params
+returns all items of the seller for sale
+"""
 
 class GetSellerItemsAPI(APIView):
     permission_classes = [IsAuthenticatedByID]
