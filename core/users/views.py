@@ -149,7 +149,12 @@ class Login(APIView):
             if not user:
                 raise CustomValidationError("Invalid Credentials")
             
-            request['query_param']["userId"] = user[0]
+            data = request.query_params
+            _mutable = data._mutable
+            data._mutable = True
+            data['userId'] = user[0]
+            data._mutable = _mutable
+
             return ProfileDetailAPI().get(request)
 
 
