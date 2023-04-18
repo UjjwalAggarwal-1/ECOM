@@ -731,7 +731,7 @@ class PastOrderDetailAPI(APIView):
                 " join user on user.id = seller.user_id "
                 " join itemimage on itemimage.item_id = item.id "
                 " left join review on review.item_id = item.id "
-                " WHERE oi.order_id = %s;",
+                " WHERE oi.order_id = %s group by item_id;",
                 [order_id],
             )
             order_items = cursor.fetchall()
