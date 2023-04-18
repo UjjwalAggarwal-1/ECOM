@@ -230,14 +230,17 @@ class VerifyCouponAPI(APIView):
 
         with connection.cursor() as cursor:
             cursor.execute(
-                "SELECT * FROM coupon_code WHERE code = %s", [coupon_code]
+                "SELECT discount FROM coupon_code WHERE code = %s and valid_to <= (select now()+interval 5 hour+interval 30 minute) "
+                " and used_count <= usage_limit;",
+                [coupon_code]
             )
             queryset = cursor.fetchone()
 
-        if queryset is None:
-            raise CustomValidationError("Invalid Coupon Code")
+            if queryset is None:
+                raise CustomValidationError("Invalid Coupon Code")
         
-        return Response({"detail" : "Coupon Verified"})
+            discount = queryset[0]
+        return Response({"detail" : discount})
 
 
 class CreateItemAPI(APIView):
