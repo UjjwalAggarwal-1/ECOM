@@ -129,7 +129,7 @@ class CategoryListAPI(APIView):
             cursor.execute(
                 "SELECT category.id, category.name, image "
                 "FROM category "
-                "JOIN "
+                "LEFT JOIN "
                 "item on item.category_id = category.id "
                 "GROUP BY "
                 "category.id "
