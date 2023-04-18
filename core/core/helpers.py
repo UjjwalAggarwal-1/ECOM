@@ -10,13 +10,13 @@ def check_keys(request: dict, keys: list):
 
 
 def get_user_from_request(request):
-    if "HTTP_USER_ID" not in request.META.keys():
+    if not request.query_params.get("userId"):
         raise CustomValidationError("Invalid Request")
 
     with connection.cursor() as cursor:
         cursor.execute(
             "SELECT id, id, email, first_name, last_name, mobile, age, sex FROM user WHERE id =%s",
-            [int(request.META["HTTP_USER_ID"])],
+            [int(request.query_params["userId"])],
         )
         user = cursor.fetchone()
         if not user:

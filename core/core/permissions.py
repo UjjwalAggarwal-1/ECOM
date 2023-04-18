@@ -23,11 +23,11 @@ class IsOwnerOrReadOnly(permissions.BasePermission):
 
 class IsAuthenticatedByID(permissions.BasePermission):
     def has_permission(self, request, view):
-        if not request.META.get("HTTP_USER_ID"):
+        if not request.query_params.get("userId"):
             return False
         with connection.cursor() as cursor:
             cursor.execute(
                 "SELECT * FROM user WHERE id =%s", [
-                    int(request.META["HTTP_USER_ID"])]
+                    int(request.query_params.get("userId"))]
             )
             return not not cursor.fetchone()
