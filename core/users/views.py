@@ -573,7 +573,7 @@ class PlaceOrderAPI(APIView):
                 raise CustomValidationError("Cart is empty")
             
             cursor.execute(
-                "SELECT id FROM payment WHERE payment_uid = %s",
+                "SELECT * FROM payment WHERE payment_uid = %s",
                 [data["payment_uid"]],
             )
             payment = cursor.fetchone()
