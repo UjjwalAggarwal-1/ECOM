@@ -553,7 +553,7 @@ class PlaceOrderAPI(APIView):
 
         with connection.cursor() as cursor:
             cursor.execute(
-                "SELECT user_id, address_id FROM customer WHERE user_id = %s", [
+                "SELECT user_id, address_id FROM customer WHERE user_id = %s;", [
                     user.get("id")]
             )
             customer = cursor.fetchone()
@@ -566,7 +566,7 @@ class PlaceOrderAPI(APIView):
                 raise CustomValidationError("Address is required")
             
             cursor.execute(
-                "SELECT customer_id, customer_id, item_id, quantity FROM cart WHERE customer_id = %s",
+                "SELECT customer_id, customer_id, item_id, quantity FROM cart WHERE customer_id = %s;",
                 [customer_id],
             )
             cart_items = cursor.fetchall()
@@ -574,7 +574,7 @@ class PlaceOrderAPI(APIView):
                 raise CustomValidationError("Cart is empty")
             
             cursor.execute(
-                "SELECT * FROM payment WHERE payment_uid = %s",
+                "SELECT * FROM payment WHERE payment_uid = %s;",
                 [data["payment_uid"]],
             )
             payment = cursor.fetchone()
@@ -582,7 +582,7 @@ class PlaceOrderAPI(APIView):
                 raise CustomValidationError("Payment UID exists!")
             
             cursor.execute(
-                "select sum(price*quantity) as total from cart join item on cart.item_id = item.id where customer_id = %s",
+                "select sum(price*quantity) as total from cart join item on cart.item_id = item.id where customer_id = %s;",
                 [customer_id],
             )
             total = cursor.fetchone()[0]
