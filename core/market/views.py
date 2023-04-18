@@ -275,6 +275,7 @@ class CreateItemAPI(APIView):
             mrp = int(mrp)
         except:
             raise CustomValidationError("Invalid Request Parameters")
+        
         if price > mrp:
             raise CustomValidationError("Price cannot be greater than MRP")
         
