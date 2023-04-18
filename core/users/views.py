@@ -618,7 +618,7 @@ class PlaceOrderAPI(APIView):
             for cart_item in cart_items:
                 cursor.execute(
                     "set @price = (select price from item where id = %s);"
-                    "set @from_address_id = (select address_id from seller where user_id = %s);"
+                    "set @from_address_id = (select address_id from seller join item on item.seller_id = seller.user_id where item.id = %s);"
                     "INSERT INTO orderitem (order_id, item_id, quantity, price, from_address_id, status) VALUES\
                     (%s, %s, %s, @price, @from_address_id, 'ORDER_PLACED');"
                     "DELETE FROM cart WHERE customer_id = %s AND item_id = %s;"
@@ -630,7 +630,7 @@ class PlaceOrderAPI(APIView):
                     "Insert into payment values(%s, %s, now());",
                    
                     [cart_item[2]]
-                    + [user.get("id")]
+                    + [cart_item[2]]
                     + [order_id, cart_item[2], cart_item[3]]
                     + [customer_id, cart_item[2]]
                     + [cart_item[3], cart_item[2]]
