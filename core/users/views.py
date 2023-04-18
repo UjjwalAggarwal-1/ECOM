@@ -627,7 +627,7 @@ class PlaceOrderAPI(APIView):
                     "UPDATE seller SET total_sales = total_sales+%s where user_id = @seller_id;"
                     "UPDATE customer SET total_purchases = total_purchases+%s where user_id = %s;"
                     "UPdate item SET total_sale = total_sale+%s where id = %s;"
-                    "Insert into payment (payment_type, payment_uid) values(%s, %s, now());",
+                    "Insert into payment (payment_type, payment_uid, payment_time) values(%s, %s, now());",
                    
                     [cart_item[2]]
                     + [cart_item[2]]
