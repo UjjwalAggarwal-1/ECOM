@@ -544,7 +544,9 @@ class PlaceOrderAPI(APIView):
     def post(self, request):
         user = get_user_from_request(request)
         data = request.data
-        # check_keys(data, ["payment_method"])
+        check_keys(data, ["payment_uid", "paymentType"])
+        coupon_code = data.get("coupon_code", None)
+
         with connection.cursor() as cursor:
             cursor.execute(
                 "SELECT user_id, address_id FROM customer WHERE user_id = %s", [
@@ -553,10 +555,12 @@ class PlaceOrderAPI(APIView):
             customer = cursor.fetchone()
             if not customer:
                 raise CustomValidationError("You are not a customer")
+            
             customer_id = customer[0]
             address_id = customer[1]
             if not address_id:
                 raise CustomValidationError("Address is required")
+            
             cursor.execute(
                 "SELECT customer_id, customer_id, item_id, quantity FROM cart WHERE customer_id = %s",
                 [customer_id],
@@ -564,21 +568,37 @@ class PlaceOrderAPI(APIView):
             cart_items = cursor.fetchall()
             if not cart_items:
                 raise CustomValidationError("Cart is empty")
+            
             cursor.execute(
                 "select sum(price*quantity) as total from cart join item on cart.item_id = item.id where customer_id = %s",
                 [customer_id],
             )
             total = cursor.fetchone()[0]
+
             cursor.execute(
                 "set autocommit = 0;"
                 "start transaction;"
-                "set @gen_uid = concat(%s, sha1(now()));\
-                set @address_id = (select address_id from customer where user_id = %s); "
-                "INSERT INTO `order` (customer_id, amount, payment_uid, address_id, order_time) VALUES (%s, %s, @gen_uid, @address_id, '"+
-                (datetime.now(pytz.timezone("Asia/Kolkata")).strftime("%Y-%m-%d %H:%M:%S"))
-                + "' ); ",
-                [customer_id, customer_id, customer_id, total],
             )
+            if coupon_code:
+                cursor.execute(
+                " SELECT discount FROM coupon_code WHERE code = %s and valid_to >= (select now()+interval 5 hour+interval 30 minute) "# because server is not in IST
+                " and used_count < usage_limit;",
+                [coupon_code]
+                )
+                coupon = cursor.fetchone()
+                if not coupon:
+                    raise CustomValidationError("Invalid coupon code")
+                discount = coupon[0] if coupon else 0
+                total = total - (total * discount / 100)
+            
+            cursor.execute(
+                "set @address_id = (select address_id from customer where user_id = %s); "
+                "INSERT INTO `order` (customer_id, amount, address_id, order_time, payment_uid) VALUES (%s, %s, @address_id, '"+
+                (datetime.now(pytz.timezone("Asia/Kolkata")).strftime("%Y-%m-%d %H:%M:%S"))
+                + "', %s ); ",
+                [customer_id, customer_id, total, data["payment_uid"]],
+            )
+
             cursor.execute("SELECT max(id) FROM `order`;")
             order_id = cursor.fetchone()[0]
 
@@ -594,8 +614,8 @@ class PlaceOrderAPI(APIView):
                     "UPDATE seller SET total_sales = total_sales+%s where user_id = @seller_id;"
                     "UPDATE customer SET total_purchases = total_purchases+%s where user_id = %s;"
                     "UPdate item SET total_sale = total_sale+%s where id = %s;"
-                    "commit;"
-                    "set autocommit = 1;",
+                    "Insert into payment values(%s, %s, now());",
+                   
                     [cart_item[2]]
                     + [user.get("id")]
                     + [order_id, cart_item[2], cart_item[3]]
@@ -605,7 +625,18 @@ class PlaceOrderAPI(APIView):
                     + [cart_item[3]] # quantity
                     + [cart_item[3], user.get("id")]
                     + [cart_item[3], cart_item[2]]
+                    + [data["paymentType"], data["payment_uid"]]
                 )
+            if coupon:
+                cursor.execute(
+                    "UPDATE `order` SET discount = %s WHERE id = %s;"
+                    "UPDATE coupon_code SET used_count = used_count + 1 WHERE code = %s;"
+                    [discount, order_id, coupon_code]
+                )
+            cursor.execute(
+                "commit;"
+                "set autocommit = 1;",
+            )
         return Response({"detail": "Order placed"})
 
 
@@ -624,7 +655,9 @@ class PastOrdersListAPI(APIView):
                 raise CustomValidationError("You are not a customer")
             customer_id = customer[0]
             cursor.execute(
-                "SELECT id, payment_uid, amount, order_time FROM `order` WHERE customer_id = %s  ORDER BY id desc;",
+                "SELECT o.id, o.payment_uid, o.amount, o.order_time, p.payment_type  FROM `order` as o "
+                "join payment as p on o.payment_uid = p.payment_uid "
+                "WHERE customer_id = %s  ORDER BY id desc;",
                 [customer_id],
             )
             orders = cursor.fetchall()
@@ -634,6 +667,7 @@ class PastOrdersListAPI(APIView):
                     "payment_uid": order[1],
                     "amount": order[2],
                     "order_time": order[3].strftime("%d-%m-%Y %H:%M"),
+                    "paymentType": order[4],
                 }
                 for order in orders
             ]
