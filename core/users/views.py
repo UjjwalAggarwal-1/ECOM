@@ -144,15 +144,11 @@ class Login(APIView):
                 [email, password],
             )
             user = cursor.fetchone()
-            if user:
-                return Response(
-                    {
-                        "detail": "Login Successful",
-                        "user_id": user[0],
-                    }
-                )
-            else:
+            if not user:
                 raise CustomValidationError("Invalid Credentials")
+            
+            request.META["HTTP_USER_ID"] = user[0]
+            return ProfileDetailAPI().get(request)
 
 
 class ProfileDetailAPI(APIView):
