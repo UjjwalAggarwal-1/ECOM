@@ -274,14 +274,22 @@ class ViewCartAPI(APIView):
         user = get_user_from_request(request)
         with connection.cursor() as cursor:
             cursor.execute(
-                "SELECT item.id, item.id, cart.quantity, item.price FROM cart\
-                join item on cart.item_id = item.id\
-                WHERE customer_id = %s",
+                "SELECT item.id, item.description, cart.quantity, item.price, item.name, itemimage.image FROM cart\
+                join item on cart.item_id = item.id \
+                join itemimage on item.id = itemimage.item_id \
+                WHERE customer_id = %s limit 1",
                 [user.get("id")],
             )
             cart_items = cursor.fetchall()
             cart_items = [
-                {"item_id": item[1], "quantity": item[2], "price": item[3]}
+                {
+                "item_id": item[0],
+                "description": item[1],
+                "quantity": item[2],
+                "price": item[3],
+                "name": item[4],
+                "image": item[5],
+                }
                 for item in cart_items
             ]
 
@@ -547,32 +555,32 @@ class PlaceOrderAPI(APIView):
             )
             total = cursor.fetchone()[0]
             cursor.execute(
+                "set autocommit = 0;"
+                "start transaction;"
                 "set @gen_uid = concat(%s, sha1(now()));\
                 set @address_id = (select address_id from customer where user_id = %s);\
                 INSERT INTO `order` (customer_id, amount, payment_uid, address_id) VALUES (%s, %s, @gen_uid, @address_id);\
                 ;",
                 [customer_id, customer_id, customer_id, total],
             )
-            cursor.execute("SELECT max(id) FROM `order`")
+            cursor.execute("SELECT max(id) FROM `order`;")
             order_id = cursor.fetchone()[0]
 
             for cart_item in cart_items:
                 cursor.execute(
-                    "start transaction;"
                     "set @price = (select price from item where id = %s);"
                     "set @from_address_id = (select address_id from seller where user_id = %s);"
-                    "set @to_address_id = (select address_id from customer where user_id = %s);"
-                    "INSERT INTO orderitem (order_id, item_id, quantity, price, from_address_id, to_address_id, status) VALUES\
-                    (%s, %s, %s, @price, @from_address_id, @to_address_id, 'ORDER_PLACED');"
+                    "INSERT INTO orderitem (order_id, item_id, quantity, price, from_address_id, status) VALUES\
+                    (%s, %s, %s, @price, @from_address_id, 'ORDER_PLACED');"
                     "DELETE FROM cart WHERE customer_id = %s AND item_id = %s;"
                     "UPDATE item SET stock = stock - %s WHERE id = %s;"
-                    "set @seller_id = (select seller_id from item where item_id = %s);"
+                    "set @seller_id = (select seller_id from item where item.id = %s);"
                     "UPDATE seller SET total_sales = total_sales+%s where user_id = @seller_id;"
                     "UPDATE customer SET total_purchases = total_purchases+%s where user_id = %s;"
                     "UPdate item SET total_sale = total_sale+%s where id = %s;"
-                    "commit;",
+                    "commit;"
+                    "set autocommit = 1;",
                     [cart_item[2]]
-                    + [user.get("id")]
                     + [user.get("id")]
                     + [order_id, cart_item[2], cart_item[3]]
                     + [customer_id, cart_item[2]]
@@ -600,7 +608,7 @@ class PastOrdersListAPI(APIView):
                 raise CustomValidationError("You are not a customer")
             customer_id = customer[0]
             cursor.execute(
-                "SELECT id, payment_uid, amount, order_time FROM `order` WHERE customer_id = %s",
+                "SELECT id, payment_uid, amount, order_time FROM `order` WHERE customer_id = %s  ORDER BY id desc;",
                 [customer_id],
             )
             orders = cursor.fetchall()
@@ -609,7 +617,7 @@ class PastOrdersListAPI(APIView):
                     "id": order[0],
                     "payment_uid": order[1],
                     "amount": order[2],
-                    "created_at": order[3].strftime("%d-%m-%Y %H:%M"),
+                    "order_time": order[3].strftime("%d-%m-%Y %H:%M"),
                 }
                 for order in orders
             ]
@@ -656,7 +664,12 @@ class PastOrderDetailAPI(APIView):
                 "pincode": order[8],
             }
             cursor.execute(
-                "SELECT item_id, quantity, price, status FROM orderitem WHERE order_id = %s",
+                "SELECT oi.item_id, oi.quantity, oi.price, oi.status, concat(user.first_name, ' ', user.last_name) ,store_name " 
+                " FROM orderitem as oi"
+                " join item on item.id = oi.item_id "
+                " join seller on seller.user_id = item.seller_id "
+                " join user on user.id = seller.user_id "
+                " WHERE order_id = %s;",
                 [order_id],
             )
             order_items = cursor.fetchall()
@@ -666,6 +679,8 @@ class PastOrderDetailAPI(APIView):
                     "quantity": order_item[1],
                     "price": order_item[2],
                     "status": order_item[3],
+                    "seller_name": order_item[4],
+                    "store_name": order_item[5],
                 }
                 for order_item in order_items
             ]
