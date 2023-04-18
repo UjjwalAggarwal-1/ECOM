@@ -373,7 +373,7 @@ class GetSellerItemsAPI(APIView):
                     "image": item[8],
                 }
             )
-        return Response({"items": items})
+        return Response(items)
     
 
 class UpdateItemAPI(APIView):
