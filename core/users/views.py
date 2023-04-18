@@ -413,16 +413,16 @@ class UpdateCustomerAPI(APIView):
         user = get_user_from_request(request)
         data = request.data
         check_keys(
-            data, ["address_line1", "city", "country", "pincode"]
+            data, ["deliver_address1", "delivery_city", "delivery_country", "delivery_pincode"]
         )
         with connection.cursor() as cursor:
             cursor.execute(
                 "SELECT id FROM address WHERE address_line1 = %s AND address_line2 = %s AND city = %s AND country = %s",
                 [
-                    data["address_line1"],
-                    data.get("address_line2", ""),
-                    data["city"],
-                    data["country"],
+                    data["delivery_address1"],
+                    data.get("delivery_address2", ""),
+                    data["delivery_city"],
+                    data["delivery_country"],
                 ],
             )
             address = cursor.fetchone()
@@ -430,10 +430,10 @@ class UpdateCustomerAPI(APIView):
                 cursor.execute(
                     "INSERT INTO address (address_line1, address_line2, city, country) VALUES (%s, %s, %s, %s);",
                     [
-                        data["address_line1"],
-                        data.get("address_line2", ""),
-                        data["city"],
-                        data["country"],
+                         data["delivery_address1"],
+                        data.get("delivery_address2", ""),
+                        data["delivery_city"],
+                        data["delivery_country"],
                     ],
                 )
                 cursor.execute("select max(id) from address;")
@@ -441,13 +441,13 @@ class UpdateCustomerAPI(APIView):
             address_id = address[0]
             cursor.execute(
                 "SELECT id FROM address_pincode WHERE id = %s AND pincode = %s",
-                [address_id, data["pincode"]],
+                [address_id, data["delivery_pincode"]],
             )
             address_pincode = cursor.fetchone()
             if not address_pincode:
                 cursor.execute(
                     "INSERT INTO address_pincode (id, pincode) VALUES (%s, %s)",
-                    [address_id, data["pincode"]],
+                    [address_id, data["delivery_pincode"]],
                 )
             cursor.execute(
                 "SELECT user_id FROM customer WHERE user_id = %s", [user.get("id")]
@@ -469,20 +469,20 @@ class UpdateSellerAPI(APIView):
             data,
             [
                 "store_name",
-                "address_line1",
-                "city",
-                "country",
-                "pincode",
+                "store_address1",
+                "store_city",
+                "store_country",
+                "store_pincode",
             ],
         )
         with connection.cursor() as cursor:
             cursor.execute(
                 "SELECT id FROM address WHERE address_line1 = %s AND address_line2 = %s AND city = %s AND country = %s",
                 [
-                    data["address_line1"],
-                    data.get("address_line2", ""),
-                    data["city"],
-                    data["country"],
+                    data["store_address1"],
+                    data.get("store_address2", ""),
+                    data["store_city"],
+                    data["store_country"],
                 ],
             )
             address = cursor.fetchone()
@@ -490,10 +490,10 @@ class UpdateSellerAPI(APIView):
                 cursor.execute(
                     "INSERT INTO address (address_line1, address_line2, city, country) VALUES (%s, %s, %s, %s);",
                     [
-                        data["address_line1"],
-                        data.get("address_line2", ""),
-                        data["city"],
-                        data["country"],
+                        data["store_address1"],
+                        data.get("store_address2", ""),
+                        data["store_city"],
+                        data["store_country"],
                     ],
                 )
                 cursor.execute("select max(id) from address;")
@@ -501,13 +501,13 @@ class UpdateSellerAPI(APIView):
             address_id = address[0]
             cursor.execute(
                 "SELECT id FROM address_pincode WHERE id = %s AND pincode = %s",
-                [address_id, data["pincode"]],
+                [address_id, data["store_pincode"]],
             )
             address_pincode = cursor.fetchone()
             if not address_pincode:
                 cursor.execute(
                     "INSERT INTO address_pincode (id, pincode) VALUES (%s, %s)",
-                    [address_id, data["pincode"]],
+                    [address_id, data["store_pincode"]],
                 )
 
             cursor.execute(
