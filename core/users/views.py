@@ -451,7 +451,9 @@ class UpdateCustomerAPI(APIView):
                 )
             else:
                 pincode = address_pincode[1]
-                raise CustomValidationError(f"Pincode:{pincode} for specified address.")
+                if pincode != data["delivery_pincode"]:
+                    raise CustomValidationError(f"Pincode:{pincode} for specified address.")
+                
             cursor.execute(
                 "SELECT user_id FROM customer WHERE user_id = %s", [user.get("id")]
             )
@@ -514,7 +516,8 @@ class UpdateSellerAPI(APIView):
                 )
             else:
                 pincode = address_pincode[1]
-                raise CustomValidationError(f"Pincode:{pincode} for specified address.")
+                if pincode != data["store_pincode"]:
+                    raise CustomValidationError(f"Pincode:{pincode} for specified address.")
             
             cursor.execute(
                 "UPDATE seller SET store_name = %s, address_id = %s WHERE user_id = %s",
