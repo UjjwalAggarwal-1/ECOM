@@ -12,7 +12,8 @@ User = get_user_model()
 import os
 from django.conf import settings
 from PIL import Image
-from django.utils import timezone
+from datetime import datetime
+import pytz
 
 """
 Register API View
@@ -563,7 +564,7 @@ class PlaceOrderAPI(APIView):
                 "set @gen_uid = concat(%s, sha1(now()));\
                 set @address_id = (select address_id from customer where user_id = %s); "
                 "INSERT INTO `order` (customer_id, amount, payment_uid, address_id, order_time) VALUES (%s, %s, @gen_uid, @address_id, '"+
-                (timezone.now().strftime("%Y-%m-%d %H:%M:%S"))
+                (datetime.now(pytz.timezone("Asia/Kolkata")).strftime("%Y-%m-%d %H:%M:%S"))
                 + "' ); ",
                 [customer_id, customer_id, customer_id, total],
             )
