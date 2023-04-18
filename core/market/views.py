@@ -380,7 +380,7 @@ class UpdateItemAPI(APIView):
     permission_classes = [IsAuthenticatedByID]
 
     def post(self, request):
-        check_keys(request.data, ["item_id", "name", "price", "mrp", "description", "category_id", "images"])
+        check_keys(request.data, ["item_id", "name", "price", "mrp", "description", "category_id"])
         item_id = request.data["item_id"]
         name = request.data["name"]
         price = request.data["price"]
@@ -433,12 +433,44 @@ class UpdateItemAPI(APIView):
         address_id = queryset[0]
         store_name = queryset[1]
 
+
         if not store_name or not store_name.strip():
             raise CustomValidationError("Store Name cannot be empty")
         if not address_id:
             raise CustomValidationError("Seller has no address")
 
-        # with connection.cursor() as cursor:
-        #     cursor.execute(
-        #         "SELECT * FROM item WHERE id = %s and seller_id = %
-                
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT * FROM item WHERE id = %s and seller_id = %s", [item_id, seller_id]
+            )
+            queryset = cursor.fetchone()
+
+        if queryset is None:
+            raise CustomValidationError("Invalid Item ID")
+
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "set autocommit=0;"
+                "START TRANSACTION;"
+                "UPDATE item SET name = %s, price = %s, mrp = %s, description = %s, category_id = %s WHERE id = %s;",
+                [name, price, mrp, description, category_id, item_id],
+            )
+        for image in images:
+            img = Image.open(image)
+            if len(image.name) > 150:
+                raise CustomValidationError("Image name cannot be more than 150 characters")
+            if img.size[0] > 300 or img.size[1] > 300:
+                img.thumbnail((300, 300))
+            if img.mode != 'RGB':
+                img = img.convert('RGB')
+            img.save(os.path.join(settings.MEDIA_ROOT,"item_images", image.name))
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    "DELETE FROM itemimage WHERE item_id = %s;"
+                    "INSERT INTO itemimage (item_id, image) VALUES (%s, %s);"
+                    "COMMIT;"
+                    "set autocommit=1;",
+                    [item_id,item_id, "item_image/"+image.name],
+                )
+            
+        return Response({"detail": "Item Updated"})
