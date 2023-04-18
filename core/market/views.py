@@ -195,7 +195,7 @@ class ItemRetreiveAPI(APIView):
             )
             queryset = cursor.fetchall()
 
-        data["images"] = queryset[0][0].split(",") if queryset[0] else []
+        data["images"] = queryset[0][0].split(",") if queryset[0] and queryset[0][0] else []
 
         with connection.cursor() as cursor:
             cursor.execute(
@@ -388,10 +388,7 @@ class UpdateItemAPI(APIView):
         description = request.data["description"]
         category_id = request.data["category_id"]
         images = request.data.getlist("images")
-        if not isinstance(images, list):
-            raise CustomValidationError("Invalid Request Parameters")
-        if len( images ) == 0:
-            raise CustomValidationError("Invalid Request Parameters")
+        
         if len( images ) > 5:
             raise CustomValidationError("Images cannot be more than 5")
         if any(isinstance(image, str) for image in images):
@@ -399,9 +396,8 @@ class UpdateItemAPI(APIView):
         
         seller_id = get_user_from_request(request).get('id')
 
-        if not name or not price or not mrp or not description or not category_id or not images:
+        if not name or not price or not mrp or not description or not category_id:
             raise CustomValidationError("Invalid Request Parameters")
-        
         if not name.strip() or not description.strip():
             raise CustomValidationError("Invalid Request Parameters")
         try:
@@ -455,6 +451,12 @@ class UpdateItemAPI(APIView):
                 "UPDATE item SET name = %s, price = %s, mrp = %s, description = %s, category_id = %s WHERE id = %s;",
                 [name, price, mrp, description, category_id, item_id],
             )
+        if len(images) > 0:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    "DELETE FROM itemimage WHERE item_id = %s;",
+                    [item_id],
+                )
         for image in images:
             img = Image.open(image)
             if len(image.name) > 150:
@@ -466,11 +468,13 @@ class UpdateItemAPI(APIView):
             img.save(os.path.join(settings.MEDIA_ROOT,"item_images", image.name))
             with connection.cursor() as cursor:
                 cursor.execute(
-                    "DELETE FROM itemimage WHERE item_id = %s;"
-                    "INSERT INTO itemimage (item_id, image) VALUES (%s, %s);"
-                    "COMMIT;"
-                    "set autocommit=1;",
-                    [item_id,item_id, "item_images/"+image.name],
+                    "INSERT INTO itemimage (item_id, image) VALUES (%s, %s);",
+                    [item_id, "item_images/"+image.name]
                 )
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "COMMIT;"
+                "set autocommit=1;"
+            )
             
         return Response({"detail": "Item Updated"})
