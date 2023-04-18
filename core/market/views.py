@@ -270,7 +270,11 @@ class CreateItemAPI(APIView):
         
         if not name.strip() or not description.strip():
             raise CustomValidationError("Invalid Request Parameters")
-        
+        try:
+            price = int(price)
+            mrp = int(mrp)
+        except:
+            raise CustomValidationError("Invalid Request Parameters")
         if price > mrp:
             raise CustomValidationError("Price cannot be greater than MRP")
         
