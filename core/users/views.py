@@ -592,7 +592,7 @@ class PlaceOrderAPI(APIView):
                 if not coupon:
                     raise CustomValidationError("Invalid coupon code")
                 discount = coupon[0] if coupon else 0
-                total = total - (total * discount / 100)
+                total = total *( 1-discount)
             else:
                 coupon = None
             cursor.execute(
