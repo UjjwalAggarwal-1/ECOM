@@ -573,6 +573,14 @@ class PlaceOrderAPI(APIView):
                 raise CustomValidationError("Cart is empty")
             
             cursor.execute(
+                "SELECT id FROM payment WHERE payment_uid = %s",
+                [data["payment_uid"]],
+            )
+            payment = cursor.fetchone()
+            if payment:
+                raise CustomValidationError("Payment UID exists!")
+            
+            cursor.execute(
                 "select sum(price*quantity) as total from cart join item on cart.item_id = item.id where customer_id = %s",
                 [customer_id],
             )
