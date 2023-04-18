@@ -680,7 +680,7 @@ class PastOrderDetailAPI(APIView):
                 "pincode": order[8],
             }
             cursor.execute(
-                "SELECT oi.item_id, oi.quantity, oi.price, oi.status, concat(user.first_name, ' ', user.last_name) ,store_name, " 
+                "SELECT oi.item_id, oi.name, oi.price, oi.status, concat(user.first_name, ' ', user.last_name) ,store_name, " 
                 " itemimage.image, avg(review.rating) "
                 " FROM orderitem as oi"
                 " join item on item.id = oi.item_id "
@@ -695,7 +695,7 @@ class PastOrderDetailAPI(APIView):
             order_items = [
                 {
                     "id": order_item[0],
-                    "quantity": order_item[1],
+                    "name": order_item[1],
                     "price": order_item[2],
                     "status": order_item[3],
                     "seller_name": order_item[4],
