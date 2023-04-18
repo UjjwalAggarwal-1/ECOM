@@ -370,7 +370,7 @@ class GetSellerItemsAPI(APIView):
                     "category_id": item[5],
                     "rating": float(item[6]),
                     "total_sale": item[7],
-                    "image": item[8].split(",") if item[8] else [],
+                    "images": item[8].split(",") if item[8] else [],
                 }
             )
         return Response(items)
