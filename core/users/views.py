@@ -283,7 +283,7 @@ class ViewCartAPI(APIView):
         user = get_user_from_request(request)
         with connection.cursor() as cursor:
             cursor.execute(
-                "SELECT item.id, item.description, cart.quantity, item.price, item.name, itemimage.image FROM cart\
+                "SELECT distinct item.id, item.description, cart.quantity, item.price, item.name, itemimage.image FROM cart\
                 join item on cart.item_id = item.id \
                 join itemimage on item.id = itemimage.item_id \
                 WHERE customer_id = %s;",
