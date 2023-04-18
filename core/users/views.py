@@ -681,22 +681,27 @@ class PastOrderDetailAPI(APIView):
             }
             cursor.execute(
                 "SELECT oi.item_id, oi.quantity, oi.price, oi.status, concat(user.first_name, ' ', user.last_name) ,store_name " 
+                " itemimage.image, avg(review.rating) "
                 " FROM orderitem as oi"
                 " join item on item.id = oi.item_id "
                 " join seller on seller.user_id = item.seller_id "
                 " join user on user.id = seller.user_id "
+                " join itemimage on itemimage.item_id = item.id "
+                " left join review on review.item_id = item.id "
                 " WHERE order_id = %s;",
                 [order_id],
             )
             order_items = cursor.fetchall()
             order_items = [
                 {
-                    "item_id": order_item[0],
+                    "id": order_item[0],
                     "quantity": order_item[1],
                     "price": order_item[2],
                     "status": order_item[3],
                     "seller_name": order_item[4],
                     "store_name": order_item[5],
+                    "image": order_item[6],
+                    "rating": order_item[7],
                 }
                 for order_item in order_items
             ]
