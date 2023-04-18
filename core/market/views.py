@@ -134,7 +134,7 @@ class CategoryListAPI(APIView):
                 "GROUP BY "
                 "category.id "
                 "ORDER BY "
-                "count(item.id) DESC"
+                "ifnull(count(item.id),0) DESC"
                 ";"
                 )
             queryset = cursor.fetchall()
