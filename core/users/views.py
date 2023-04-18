@@ -413,7 +413,7 @@ class UpdateCustomerAPI(APIView):
         user = get_user_from_request(request)
         data = request.data
         check_keys(
-            data, ["deliver_address1", "delivery_city", "delivery_country", "delivery_pincode"]
+            data, ["delivery_address1", "delivery_city", "delivery_country", "delivery_pincode"]
         )
         with connection.cursor() as cursor:
             cursor.execute(
