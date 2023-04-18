@@ -430,7 +430,7 @@ class UpdateCustomerAPI(APIView):
                 cursor.execute(
                     "INSERT INTO address (address_line1, address_line2, city, country) VALUES (%s, %s, %s, %s);",
                     [
-                         data["delivery_address1"],
+                        data["delivery_address1"],
                         data.get("delivery_address2", ""),
                         data["delivery_city"],
                         data["delivery_country"],
@@ -440,8 +440,8 @@ class UpdateCustomerAPI(APIView):
                 address = cursor.fetchone()
             address_id = address[0]
             cursor.execute(
-                "SELECT id FROM address_pincode WHERE id = %s AND pincode = %s",
-                [address_id, data["delivery_pincode"]],
+                "SELECT id, pincode FROM address_pincode WHERE id = %s",
+                [address_id],
             )
             address_pincode = cursor.fetchone()
             if not address_pincode:
@@ -449,6 +449,9 @@ class UpdateCustomerAPI(APIView):
                     "INSERT INTO address_pincode (id, pincode) VALUES (%s, %s)",
                     [address_id, data["delivery_pincode"]],
                 )
+            else:
+                pincode = address_pincode[1]
+                raise CustomValidationError(f"Pincode:{pincode} for specified address.")
             cursor.execute(
                 "SELECT user_id FROM customer WHERE user_id = %s", [user.get("id")]
             )
@@ -500,8 +503,8 @@ class UpdateSellerAPI(APIView):
                 address = cursor.fetchone()
             address_id = address[0]
             cursor.execute(
-                "SELECT id FROM address_pincode WHERE id = %s AND pincode = %s",
-                [address_id, data["store_pincode"]],
+                "SELECT id, pincode FROM address_pincode WHERE id = %s",
+                [address_id],
             )
             address_pincode = cursor.fetchone()
             if not address_pincode:
@@ -509,7 +512,10 @@ class UpdateSellerAPI(APIView):
                     "INSERT INTO address_pincode (id, pincode) VALUES (%s, %s)",
                     [address_id, data["store_pincode"]],
                 )
-
+            else:
+                pincode = address_pincode[1]
+                raise CustomValidationError(f"Pincode:{pincode} for specified address.")
+            
             cursor.execute(
                 "UPDATE seller SET store_name = %s, address_id = %s WHERE user_id = %s",
                 [data["store_name"], address_id, user.get("id")],
