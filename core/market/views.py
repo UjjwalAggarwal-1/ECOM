@@ -396,7 +396,7 @@ class UpdateItemAPI(APIView):
     permission_classes = [IsAuthenticatedByID]
 
     def post(self, request):
-        check_keys(request.data, ["item_id", "name", "price", "mrp", "description", "category_id"])
+        check_keys(request.data, ["item_id", "name", "price", "mrp", "description", "category_id", "quantity"])
         item_id = request.data["item_id"]
         name = request.data["name"]
         price = request.data["price"]
@@ -404,6 +404,10 @@ class UpdateItemAPI(APIView):
         description = request.data["description"]
         category_id = request.data["category_id"]
         images = request.data.getlist("images")
+        quantity = request.data["quantity"]
+
+        if quantity < 0:
+            raise CustomValidationError("Quantity cannot be negative")
         
         if len( images ) > 5:
             raise CustomValidationError("Images cannot be more than 5")
@@ -464,8 +468,8 @@ class UpdateItemAPI(APIView):
             cursor.execute(
                 "set autocommit=0;"
                 "START TRANSACTION;"
-                "UPDATE item SET name = %s, price = %s, mrp = %s, description = %s, category_id = %s WHERE id = %s;",
-                [name, price, mrp, description, category_id, item_id],
+                "UPDATE item SET name = %s, price = %s, mrp = %s, description = %s, category_id = %s, quantity = %s WHERE id = %s;",
+                [name, price, mrp, description, category_id, quantity, item_id],
             )
         if len(images) > 0:
             with connection.cursor() as cursor:
