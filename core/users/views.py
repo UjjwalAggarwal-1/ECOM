@@ -14,6 +14,7 @@ from django.conf import settings
 from PIL import Image
 from datetime import datetime
 import pytz
+import uuid
 
 """
 Register API View
@@ -609,6 +610,8 @@ class PlaceOrderAPI(APIView):
                 )
                 coupon = cursor.fetchone()
                 if not coupon:
+                    cursor.execute("rollback; \
+                                   set autocommit = 1;")
                     raise CustomValidationError("Invalid coupon code")
                 discount = coupon[0] if coupon else 0
                 total = int(total) *( 1-discount)
@@ -829,13 +832,20 @@ class CreateReviewAPI(APIView):
             )
             image = data.getlist("image")
             if len(image)>1:
+                cursor.execute(
+                    "rollback;"
+                    "set autocommit = 1;"
+                )
                 raise CustomValidationError("Only one image allowed")
             if image and image != [''] and len(image)==1:
                 cursor.execute(
                     "UPDATE review set image = %s where order_id = %s and item_id = %s;",
                     ['review_images/'+image[0].name, data.get('order_id'), data.get("item_id")],
                 )
+
                 img = Image.open(image[0])
+                image[0].name = str(uuid.uuid4()) + "." + image[0].name.split(".")[-1]
+                img.thumbnail((300,300))
                 if img.mode != 'RGB':
                     img = img.convert('RGB')
                 img.save(os.path.join(settings.MEDIA_ROOT,"review_images", image[0].name))

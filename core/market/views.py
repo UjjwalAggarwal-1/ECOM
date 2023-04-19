@@ -334,8 +334,6 @@ class CreateItemAPI(APIView):
         for image in images:
             img = Image.open(image)
             image.name = str(uuid.uuid4()) + "." + image.name.split(".")[-1]
-            if len(image.name) > 150:
-                raise CustomValidationError("Image name cannot be more than 150 characters")
             if img.size[0] > 300 or img.size[1] > 300:
                 img.thumbnail((300, 300))
             if img.mode != 'RGB':
@@ -344,10 +342,13 @@ class CreateItemAPI(APIView):
             with connection.cursor() as cursor:
                 cursor.execute(
                     "INSERT INTO itemimage (item_id, image) VALUES (%s, %s);"
-                    "COMMIT;"
-                    "set autocommit=1;",
                     [item_id, "item_images/"+image.name],
                 )
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "COMMIT;"
+                "set autocommit=1;"
+            )
 
         return Response({"detail": "Item Created"})
     
@@ -480,8 +481,7 @@ class UpdateItemAPI(APIView):
         for image in images:
             img = Image.open(image)
             image.name = str(uuid.uuid4()) + "." + image.name.split(".")[-1]
-            if len(image.name) > 150:
-                raise CustomValidationError("Image name cannot be more than 150 characters")
+            
             if img.size[0] > 300 or img.size[1] > 300:
                 img.thumbnail((300, 300))
             if img.mode != 'RGB':
