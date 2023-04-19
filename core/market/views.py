@@ -410,7 +410,12 @@ class UpdateItemAPI(APIView):
         images = request.data.getlist("images")
         quantity = request.data["quantity"]
 
-        if quantity < 0:
+        if not isinstance(item_id, int):
+            raise CustomValidationError("Invalid Request Parameters")
+        if not isinstance(quantity, int):
+            raise CustomValidationError("Invalid Request Parameters")
+
+        if int(quantity) < 0:
             raise CustomValidationError("Quantity cannot be negative")
         
         if len( images ) > 5:
