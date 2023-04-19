@@ -353,6 +353,16 @@ class UpdateCartAPI(APIView):
                     "detail": "Item removed from cart",
                 }
             )
+        
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT stock FROM item WHERE id = %s",
+                [int(data["item_id"])],
+            )
+            item = cursor.fetchone()
+            stock = item[0]
+        if int(data["quantity"]) > stock:
+            raise CustomValidationError("Quantity exceeds stock")
 
         with connection.cursor() as cursor:
             cursor.execute(
