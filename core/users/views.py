@@ -651,9 +651,8 @@ class PlaceOrderAPI(APIView):
                     "UPDATE seller SET total_sales = total_sales+%s where user_id = @seller_id;"
                     "UPDATE customer SET total_purchases = total_purchases+%s where user_id = %s;"
                     "UPdate item SET total_sale = total_sale+%s where id = %s;"
-                    "Insert into payment (payment_type, payment_uid, payment_time) values(%s, %s, now());"
-                    "commit;"
-                    "set autocommit = 1;",
+                    "Insert into payment (payment_type, payment_uid, payment_time) values(%s, %s, now());",
+                    
                     [cart_item[2]]
                     + [cart_item[2]]
                     + [order_id, cart_item[2], cart_item[3]]
@@ -670,6 +669,10 @@ class PlaceOrderAPI(APIView):
                     "UPDATE coupon_code SET used_count = used_count + 1 WHERE code = %s;",
                     [ coupon_code]
                 )
+            cursor.execute(
+                "commit;"
+                "set autocommit = 1;"
+            )
         return Response({"detail": "Order placed"})
 
 
