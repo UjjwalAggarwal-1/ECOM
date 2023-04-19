@@ -627,6 +627,17 @@ class PlaceOrderAPI(APIView):
 
             for cart_item in cart_items:
                 cursor.execute(
+                    "select stock from item where id = %s;",
+                    [cart_item[2]],
+                )
+                stock = cursor.fetchone()[0]
+                if stock < cart_item[3]:
+                    cursor.execute(
+                        "rollback;"
+                        "set autocommit = 1;"
+                        )
+                    raise CustomValidationError("Item out of stock")
+                cursor.execute(
                     "set @price = (select price from item where id = %s);"
                     "set @from_address_id = (select address_id from seller join item on item.seller_id = seller.user_id where item.id = %s);"
                     "INSERT INTO orderitem (order_id, item_id, quantity, price, from_address_id, status) VALUES\
