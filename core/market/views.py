@@ -10,6 +10,7 @@ from core.helpers import get_user_from_request
 import os
 from django.conf import settings
 from PIL import Image
+import uuid
 
 
 """
@@ -332,6 +333,7 @@ class CreateItemAPI(APIView):
             item_id = cursor.fetchone()[0]
         for image in images:
             img = Image.open(image)
+            image.name = str(uuid.uuid4()) + "." + image.name.split(".")[-1]
             if len(image.name) > 150:
                 raise CustomValidationError("Image name cannot be more than 150 characters")
             if img.size[0] > 300 or img.size[1] > 300:
@@ -472,6 +474,7 @@ class UpdateItemAPI(APIView):
                 )
         for image in images:
             img = Image.open(image)
+            image.name = str(uuid.uuid4()) + "." + image.name.split(".")[-1]
             if len(image.name) > 150:
                 raise CustomValidationError("Image name cannot be more than 150 characters")
             if img.size[0] > 300 or img.size[1] > 300:
