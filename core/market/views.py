@@ -256,13 +256,16 @@ class CreateItemAPI(APIView):
     permission_classes = [IsAuthenticatedByID]
 
     def post(self, request):
-        check_keys(request.data, ["name", "price", "mrp", "description", "category_id", "images"])
+        check_keys(request.data, ["name", "price", "mrp", "description", "category_id", "images", "quantity"])
         name = request.data["name"]
         price = request.data["price"]
         mrp = request.data["mrp"]
         description = request.data["description"]
         category_id = request.data["category_id"]
         images = request.data.getlist("images")
+        quantity = request.data["quantity"]
+        if quantity < 0:
+            raise CustomValidationError("Invalid Request Parameters")
         if not isinstance(images, list):
             raise CustomValidationError("Invalid Request Parameters")
         if len( images ) == 0:
@@ -326,8 +329,8 @@ class CreateItemAPI(APIView):
             cursor.execute(
                 "set autocommit=0;"
                 "START TRANSACTION;"
-                "INSERT INTO item (name, price, mrp, description, category_id, seller_id) VALUES (%s, %s, %s, %s, %s, %s);",
-                [name, price, mrp, description, category_id, seller_id],
+                "INSERT INTO item (name, price, mrp, description, category_id, seller_id, stock) VALUES (%s, %s, %s, %s, %s, %s, %s);",
+                [name, price, mrp, description, category_id, seller_id, quantity],
             )
             cursor.execute("SELECT LAST_INSERT_ID();")
             item_id = cursor.fetchone()[0]
